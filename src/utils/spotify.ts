@@ -156,10 +156,27 @@ export const getUserProfile = async (accessToken: string) => {
   }
 };
 
-export const getTopTracks = async (accessToken: string) => {
+interface SpotifyTrack {
+  name: string;
+  artists: Array<{
+    name: string;
+  }>;
+}
+
+interface SpotifyTopTracksResponse {
+  items: SpotifyTrack[];
+}
+
+export const getTopTracks = async (accessToken: string, timeRange: string, limit: string) => {
   try {
+    // Validate time range
+    const validTimeRanges = ['short_term', 'medium_term', 'long_term'];
+    if (!validTimeRanges.includes(timeRange)) {
+      throw new Error(`Invalid time range: ${timeRange}`);
+    }
+
     const response = await fetch(
-      `${SPOTIFY_API_URL}/me/top/tracks?time_range=long_term&limit=10`,
+      `${SPOTIFY_API_URL}/me/top/tracks?time_range=${timeRange}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -173,17 +190,19 @@ export const getTopTracks = async (accessToken: string) => {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
+        timeRange,
+        limit
       });
       throw new Error(`Failed to get top tracks: ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as SpotifyTopTracksResponse;
     if (!data.items || !Array.isArray(data.items)) {
       console.error('Invalid top tracks data:', data);
       throw new Error('Invalid top tracks data received');
     }
 
-    return data.items.map((track: any) => ({
+    return data.items.map((track: SpotifyTrack) => ({
       name: track.name,
       artist: track.artists[0].name,
     }));

@@ -13,6 +13,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string>('');
   const [topTracks, setTopTracks] = useState<Track[]>([]);
+  const [timeRange, setTimeRange] = useState('short_term');
+  const [trackLimit, setTrackLimit] = useState('10');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -61,6 +63,14 @@ export default function Home() {
     window.history.replaceState({}, '', '/');
   };
 
+  const handleConnect = () => {
+    const params = new URLSearchParams({
+      timeRange,
+      trackLimit
+    });
+    window.location.href = `${authUrl}&${params.toString()}`;
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-24">
       <div className="text-center">
@@ -102,12 +112,44 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <a
-            href={authUrl}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition-colors"
-          >
-            Connect with Spotify
-          </a>
+          <div className="flex items-center gap-4 justify-center">
+            <div className="flex items-center gap-2">
+              <label htmlFor="timeRange" className="text-sm font-medium">
+                How far to go back?
+              </label>
+              <select
+                id="timeRange"
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="short_term">1 month</option>
+                <option value="medium_term">6 months</option>
+                <option value="long_term">12 months</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="trackLimit" className="text-sm font-medium">
+                How many tracks?
+              </label>
+              <select
+                id="trackLimit"
+                value={trackLimit}
+                onChange={(e) => setTrackLimit(e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+            <button
+              onClick={handleConnect}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition-colors"
+            >
+              Connect with Spotify
+            </button>
+          </div>
         )}
       </div>
     </main>

@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken, getUserProfile, getTopTracks } from '@/utils/spotify';
 
+// Map numeric values to Spotify API time ranges
+const mapTimeRange = (value: string): string => {
+  switch (value) {
+    case '1':
+      return 'short_term';
+    case '6':
+      return 'medium_term';
+    case '12':
+      return 'long_term';
+    default:
+      return 'short_term'; // Default to 1 month if invalid
+  }
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  const timeRange = mapTimeRange(searchParams.get('timeRange') || '1');
+  const trackLimit = searchParams.get('trackLimit') || '10';
 
   if (!code) {
     console.error('No code received in callback');
@@ -35,8 +51,8 @@ export async function GET(request: Request) {
         throw new Error('Failed to get user profile');
       }
 
-      console.log('Getting top tracks...');
-      const topTracks = await getTopTracks(access_token);
+      console.log('Getting top tracks with time range:', timeRange);
+      const topTracks = await getTopTracks(access_token, timeRange, trackLimit);
 
       console.log('Successfully authenticated user:', userProfile.display_name);
       const params = new URLSearchParams({
