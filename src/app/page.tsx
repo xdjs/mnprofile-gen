@@ -1,154 +1,214 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAuthUrl } from '@/utils/spotify-client';
+import { useState, useEffect } from 'react';
+import { getSpotifyAuthUrl } from '@/utils/spotify-client';
 
 interface Track {
   name: string;
   artist: string;
 }
 
+// Helper function to parse cookies
+function parseCookies() {
+  const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+    const [name, value] = cookie.split('=');
+    acc[name] = decodeURIComponent(value);
+    return acc;
+  }, {} as Record<string, string>);
+  
+  console.log('All cookies:', document.cookie);
+  console.log('Parsed cookies:', cookies);
+  return cookies;
+}
+
 export default function Home() {
-  const [userName, setUserName] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [authUrl, setAuthUrl] = useState<string>('');
-  const [topTracks, setTopTracks] = useState<Track[]>([]);
   const [timeRange, setTimeRange] = useState('short_term');
   const [trackLimit, setTrackLimit] = useState('10');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name');
-    const error = params.get('error');
-    const tracksParam = params.get('tracks');
-
+  // Function to check and update user data from cookies
+  const checkUserData = () => {
+    console.log('Checking user data...');
+    const cookies = parseCookies();
+    const name = cookies.spotify_name;
+    const tracksCookie = cookies.spotify_tracks;
+    
+    console.log('Found cookies:', { name, hasTracks: !!tracksCookie });
+    
     if (name) {
-      setUserName(decodeURIComponent(name));
+      console.log('Setting display name:', name);
+      setDisplayName(name);
     }
-
-    if (tracksParam) {
+    
+    if (tracksCookie) {
       try {
-        const tracks = JSON.parse(tracksParam);
-        setTopTracks(tracks);
-      } catch (err) {
-        console.error('Error parsing tracks:', err);
+        console.log('Raw tracks cookie:', tracksCookie);
+        const tracksData = JSON.parse(tracksCookie);
+        console.log('Parsed tracks data:', tracksData);
+        
+        if (!Array.isArray(tracksData)) {
+          console.error('Tracks data is not an array:', tracksData);
+          return;
+        }
+        
+        if (tracksData.length === 0) {
+          console.log('No tracks found in data');
+          return;
+        }
+        
+        console.log('Setting tracks:', tracksData);
+        setTracks(tracksData);
+      } catch (e) {
+        console.error('Error parsing tracks from cookie:', e);
+        console.error('Raw tracks cookie value:', tracksCookie);
       }
+    } else {
+      console.log('No tracks cookie found');
     }
-
-    if (error) {
-      if (error === 'unregistered_user') {
-        setError('This Spotify account needs to be registered in the Developer Dashboard. Please contact the application administrator.');
-      } else {
-        setError('Authentication failed. Please try again.');
-      }
-    }
-
-    try {
-      // Generate auth URL only on the client side
-      const url = getAuthUrl();
-      if (!url) {
-        throw new Error('Failed to generate auth URL');
-      }
-      setAuthUrl(url);
-    } catch (err) {
-      setError('Failed to initialize Spotify connection. Please try again later.');
-      console.error('Error generating auth URL:', err);
-    }
-  }, []);
-
-  const handleDisconnect = () => {
-    setUserName(null);
-    setTopTracks([]);
-    // Clear the URL parameters without refreshing the page
-    window.history.replaceState({}, '', '/');
   };
 
+  useEffect(() => {
+    // Check for error in URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    if (errorParam) {
+      if (errorParam === 'unregistered_user') {
+        setError('Please register your Spotify account at https://www.spotify.com/signup before connecting.');
+      } else if (errorParam === 'auth_failed') {
+        setError('Failed to connect with Spotify. Please try again.');
+      }
+      // Clear the error from URL
+      window.history.replaceState({}, '', '/');
+    }
+
+    // Initial check for user data
+    checkUserData();
+
+    // Set up an interval to check for updates
+    const interval = setInterval(checkUserData, 1000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, []);
+
   const handleConnect = () => {
+    setIsLoading(true);
+    const url = getSpotifyAuthUrl();
     const params = new URLSearchParams({
       timeRange,
       trackLimit
     });
-    window.location.href = `${authUrl}&${params.toString()}`;
+    window.location.href = `${url}&${params.toString()}`;
+  };
+
+  const handleDisconnect = () => {
+    // Clear cookies
+    document.cookie = 'spotify_name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'spotify_tracks=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setDisplayName(null);
+    setTracks([]);
+  };
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    checkUserData();
+    setIsLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-8">Spotify History</h1>
+    <main className="min-h-screen p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold mb-8">Spotify Top Tracks</h1>
         
         {error && (
-          <div className="text-red-500 mb-4">{error}</div>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
         )}
 
-        {userName ? (
-          <div className="flex flex-col items-center gap-6">
-            <div className="flex items-center gap-4">
-              <div className="text-xl">
-                Welcome, {userName}!
+        {!displayName ? (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div>
+                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+                  Time Range
+                </label>
+                <select
+                  id="timeRange"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="short_term">1 month</option>
+                  <option value="medium_term">6 months</option>
+                  <option value="long_term">12 months</option>
+                </select>
               </div>
-              <button
-                onClick={handleDisconnect}
-                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors text-sm"
-              >
-                Disconnect
-              </button>
+
+              <div>
+                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-1">
+                  How many tracks?
+                </label>
+                <select
+                  id="trackLimit"
+                  value={trackLimit}
+                  onChange={(e) => setTrackLimit(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
             </div>
 
-            {topTracks.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-2xl font-semibold mb-4">Your Top Tracks</h2>
-                <div className="space-y-2 text-left">
-                  {topTracks.map((track, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <span className="text-gray-500 w-8">{index + 1}.</span>
-                      <div className="truncate">
-                        <span className="mr-2">{track.name}</span>
-                        <span className="font-bold">• {track.artist}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-4 justify-center">
-            <div className="flex items-center gap-2">
-              <label htmlFor="timeRange" className="text-sm font-medium">
-                How far to go back?
-              </label>
-              <select
-                id="timeRange"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="short_term">1 month</option>
-                <option value="medium_term">6 months</option>
-                <option value="long_term">12 months</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="trackLimit" className="text-sm font-medium">
-                How many tracks?
-              </label>
-              <select
-                id="trackLimit"
-                value={trackLimit}
-                onChange={(e) => setTrackLimit(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
             <button
               onClick={handleConnect}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition-colors"
+              disabled={isLoading}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
             >
-              Connect with Spotify
+              {isLoading ? 'Connecting...' : 'Connect with Spotify'}
             </button>
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-semibold">Welcome, {displayName}!</h2>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                >
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+                <button
+                  onClick={handleDisconnect}
+                  style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white'
+                  }}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm hover:bg-[#b91c1c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+
+            {tracks.length > 0 ? (
+              <div className="space-y-2">
+                {tracks.map((track, index) => (
+                  <div key={index} className="text-gray-700">
+                    {track.name} • <span className="font-medium">{track.artist}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No tracks found.</p>
+            )}
           </div>
         )}
       </div>

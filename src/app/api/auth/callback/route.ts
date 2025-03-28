@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken, getUserProfile, getTopTracks } from '@/utils/spotify';
+import { cookies } from 'next/headers';
 
 // Map numeric values to Spotify API time ranges
 const mapTimeRange = (value: string): string => {
@@ -20,6 +21,13 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const timeRange = mapTimeRange(searchParams.get('timeRange') || '1');
   const trackLimit = searchParams.get('trackLimit') || '10';
+
+  console.log('Callback received with params:', { 
+    code: code?.substring(0, 10) + '...', 
+    timeRange, 
+    trackLimit,
+    fullUrl: request.url 
+  });
 
   if (!code) {
     console.error('No code received in callback');
@@ -51,24 +59,56 @@ export async function GET(request: Request) {
         throw new Error('Failed to get user profile');
       }
 
-      console.log('Getting top tracks with time range:', timeRange);
+      console.log('Getting top tracks with params:', { timeRange, trackLimit });
       const topTracks = await getTopTracks(access_token, timeRange, trackLimit);
 
       console.log('Successfully authenticated user:', userProfile.display_name);
-      const params = new URLSearchParams({
-        name: userProfile.display_name,
-        tracks: JSON.stringify(topTracks)
+      console.log('Retrieved tracks:', {
+        count: topTracks.length,
+        expectedCount: parseInt(trackLimit),
+        firstTrack: topTracks[0]
       });
-      return NextResponse.redirect(new URL(`/?${params.toString()}`, request.url));
+      
+      // Create response with redirect
+      const response = NextResponse.redirect(new URL('/', request.url));
+      
+      // Set cookies with the data
+      const cookieOptions = {
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+        maxAge: 3600 // 1 hour
+      };
+
+      console.log('Setting cookies with options:', cookieOptions);
+      
+      response.cookies.set('spotify_name', userProfile.display_name, cookieOptions);
+      response.cookies.set('spotify_tracks', JSON.stringify(topTracks), cookieOptions);
+
+      // Log the cookies that were set
+      console.log('Cookies set:', {
+        name: userProfile.display_name,
+        tracksCount: topTracks.length,
+        expectedTracksCount: parseInt(trackLimit)
+      });
+
+      return response;
     } catch (profileError) {
       // Handle specific error for unregistered users
       if (profileError instanceof Error && profileError.message.includes('needs to be registered')) {
-        return NextResponse.redirect(new URL('/?error=unregistered_user', request.url));
+        const response = NextResponse.redirect(new URL('/?error=unregistered_user', request.url));
+        response.cookies.delete('spotify_name');
+        response.cookies.delete('spotify_tracks');
+        return response;
       }
       throw profileError;
     }
   } catch (error) {
     console.error('Error during Spotify authentication:', error);
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    const response = NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    response.cookies.delete('spotify_name');
+    response.cookies.delete('spotify_tracks');
+    return response;
   }
 } 

@@ -1,41 +1,60 @@
-const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
-const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
-const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+// Spotify API endpoints
+export const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
+export const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
+export const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 
-// Get environment variables, handling both client and server side
-const getClientId = () => {
-  // Try client-side variable first
-  const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
-  if (clientId) return clientId;
-  
-  // Fall back to server-side variable
-  return process.env.SPOTIFY_CLIENT_ID;
-};
+// Spotify API scopes
+export const SPOTIFY_SCOPES = [
+  'user-read-currently-playing',
+  'user-top-read',
+  'user-read-recently-played',
+  'user-library-read'
+];
 
-const getClientSecret = () => {
-  return process.env.SPOTIFY_CLIENT_SECRET;
-};
+// Client-side environment variables
+export const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+export const SPOTIFY_REDIRECT_URI = process.env.NEXT_PUBLIC_REDIRECT_URI;
 
-const getRedirectUri = () => {
-  // Try client-side variable first
-  const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI;
-  if (redirectUri) return redirectUri;
-  
-  // Fall back to server-side variable
-  return process.env.REDIRECT_URI;
-};
+// Server-side environment variables
+export const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
-// Validate environment variables
-if (!getClientId()) {
-  throw new Error('SPOTIFY_CLIENT_ID is not defined in environment variables');
+// Client-side environment validation
+if (typeof window !== 'undefined') {
+  if (!SPOTIFY_CLIENT_ID) {
+    throw new Error('NEXT_PUBLIC_SPOTIFY_CLIENT_ID is not defined in environment variables');
+  }
+  if (!SPOTIFY_REDIRECT_URI) {
+    throw new Error('NEXT_PUBLIC_REDIRECT_URI is not defined in environment variables');
+  }
 }
 
-if (!getClientSecret()) {
-  throw new Error('SPOTIFY_CLIENT_SECRET is not defined in environment variables');
+// Server-side environment validation
+if (typeof window === 'undefined') {
+  if (!SPOTIFY_CLIENT_SECRET) {
+    throw new Error('SPOTIFY_CLIENT_SECRET is not defined in environment variables');
+  }
 }
 
-if (!getRedirectUri()) {
-  throw new Error('REDIRECT_URI is not defined in environment variables');
+// Type definitions
+export interface Track {
+  name: string;
+  artist: string;
+}
+
+interface SpotifyArtist {
+  name: string;
+}
+
+interface SpotifyTrack {
+  name: string;
+  artists: SpotifyArtist[];
+}
+
+interface SpotifyTopTracksResponse {
+  items: SpotifyTrack[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export const scopes = [
@@ -48,9 +67,9 @@ export const scopes = [
 export const getAuthUrl = () => {
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: getClientId()!,
+    client_id: SPOTIFY_CLIENT_ID!,
     scope: scopes,
-    redirect_uri: getRedirectUri()!,
+    redirect_uri: SPOTIFY_REDIRECT_URI!,
     show_dialog: 'true'
   });
 
@@ -58,28 +77,28 @@ export const getAuthUrl = () => {
 };
 
 export const getAccessToken = async (code: string) => {
-  if (!process.env.SPOTIFY_CLIENT_ID) {
+  if (!SPOTIFY_CLIENT_ID) {
     throw new Error('SPOTIFY_CLIENT_ID is not defined');
   }
 
-  if (!process.env.SPOTIFY_CLIENT_SECRET) {
+  if (!SPOTIFY_CLIENT_SECRET) {
     throw new Error('SPOTIFY_CLIENT_SECRET is not defined');
   }
 
-  if (!process.env.NEXT_PUBLIC_REDIRECT_URI) {
+  if (!SPOTIFY_REDIRECT_URI) {
     throw new Error('NEXT_PUBLIC_REDIRECT_URI is not defined');
   }
 
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
-    redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_URI,
+    redirect_uri: SPOTIFY_REDIRECT_URI,
   });
 
   console.log('Token request params:', {
     grant_type: 'authorization_code',
     code: code.substring(0, 10) + '...',
-    redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_URI,
+    redirect_uri: SPOTIFY_REDIRECT_URI,
   });
 
   try {
@@ -88,7 +107,7 @@ export const getAccessToken = async (code: string) => {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Authorization: `Basic ${Buffer.from(
-          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+          `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
         ).toString('base64')}`,
       },
       body: params.toString(),
@@ -156,58 +175,43 @@ export const getUserProfile = async (accessToken: string) => {
   }
 };
 
-interface SpotifyTrack {
-  name: string;
-  artists: Array<{
-    name: string;
-  }>;
-}
-
-interface SpotifyTopTracksResponse {
-  items: SpotifyTrack[];
-}
-
-export const getTopTracks = async (accessToken: string, timeRange: string, limit: string) => {
+export const getTopTracks = async (access_token: string, timeRange: string, limit: string): Promise<Track[]> => {
   try {
-    // Validate time range
-    const validTimeRanges = ['short_term', 'medium_term', 'long_term'];
-    if (!validTimeRanges.includes(timeRange)) {
-      throw new Error(`Invalid time range: ${timeRange}`);
-    }
-
+    console.log('Fetching top tracks with params:', { timeRange, limit });
+    
     const response = await fetch(
       `${SPOTIFY_API_URL}/me/top/tracks?time_range=${timeRange}&limit=${limit}`,
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${access_token}`,
         },
       }
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Top tracks request failed:', {
+      const errorData = await response.json();
+      console.error('Error fetching top tracks:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorText,
-        timeRange,
-        limit
+        error: errorData
       });
-      throw new Error(`Failed to get top tracks: ${errorText}`);
+      throw new Error(`Failed to fetch top tracks: ${response.statusText}`);
     }
 
     const data = await response.json() as SpotifyTopTracksResponse;
-    if (!data.items || !Array.isArray(data.items)) {
-      console.error('Invalid top tracks data:', data);
-      throw new Error('Invalid top tracks data received');
-    }
+    console.log('Top tracks response:', {
+      total: data.total,
+      limit: data.limit,
+      offset: data.offset,
+      itemsCount: data.items.length
+    });
 
-    return data.items.map((track: SpotifyTrack) => ({
-      name: track.name,
-      artist: track.artists[0].name,
+    return data.items.map((item: SpotifyTrack) => ({
+      name: item.name,
+      artist: item.artists[0].name,
     }));
   } catch (error) {
-    console.error('Error getting top tracks:', error);
+    console.error('Error in getTopTracks:', error);
     throw error;
   }
 }; 
