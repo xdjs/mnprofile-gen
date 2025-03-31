@@ -156,7 +156,7 @@ export default function Home() {
           <div className="space-y-4">
             <div className="flex items-end space-x-4">
               <div>
-                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-2">
                   Time Range
                 </label>
                 <select
@@ -172,7 +172,7 @@ export default function Home() {
               </div>
 
               <div>
-                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-2">
                   How many tracks?
                 </label>
                 <select
