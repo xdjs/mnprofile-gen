@@ -11,6 +11,8 @@ interface Track {
 interface ParsedCookies {
   spotify_name?: string;
   spotify_tracks?: Track[];
+  spotify_timeRange?: string;
+  spotify_trackLimit?: string;
 }
 
 // Helper function to parse cookies
@@ -43,17 +45,28 @@ function parseCookies(): ParsedCookies {
         acc.spotify_tracks = parsedTracks;
       } else if (name === 'spotify_name') {
         acc.spotify_name = decodedValue;
+      } else if (name === 'spotify_timeRange') {
+        acc.spotify_timeRange = decodedValue;
+      } else if (name === 'spotify_trackLimit') {
+        acc.spotify_trackLimit = decodedValue;
       }
     } catch (e) {
       console.error(`Error parsing cookie ${name}:`, e);
       console.error('Full cookie value:', value);
     }
     return acc;
-  }, { spotify_name: undefined, spotify_tracks: undefined });
+  }, { 
+    spotify_name: undefined, 
+    spotify_tracks: undefined,
+    spotify_timeRange: undefined,
+    spotify_trackLimit: undefined
+  });
   
   console.log('Final parsed cookies:', {
     hasName: !!cookies.spotify_name,
-    tracksCount: cookies.spotify_tracks?.length
+    tracksCount: cookies.spotify_tracks?.length,
+    timeRange: cookies.spotify_timeRange,
+    trackLimit: cookies.spotify_trackLimit
   });
   
   return cookies;
@@ -98,6 +111,16 @@ export default function Home() {
         console.log('Updating display name:', cookies.spotify_name);
         setDisplayName(cookies.spotify_name);
       }
+
+      if (cookies.spotify_timeRange) {
+        console.log('Updating time range:', cookies.spotify_timeRange);
+        setTimeRange(cookies.spotify_timeRange);
+      }
+
+      if (cookies.spotify_trackLimit) {
+        console.log('Updating track limit:', cookies.spotify_trackLimit);
+        setTrackLimit(cookies.spotify_trackLimit);
+      }
       
       if (cookies.spotify_tracks) {
         console.log('Found tracks in cookies:', {
@@ -122,14 +145,19 @@ export default function Home() {
 
   const handleConnect = () => {
     setIsLoading(true);
+    // Store the current options in cookies before redirecting
+    document.cookie = `spotify_timeRange=${encodeURIComponent(timeRange)}; path=/; max-age=3600`;
+    document.cookie = `spotify_trackLimit=${encodeURIComponent(trackLimit)}; path=/; max-age=3600`;
     const url = getSpotifyAuthUrl(timeRange, trackLimit);
     window.location.href = url;
   };
 
   const handleDisconnect = () => {
-    // Clear cookies
+    // Clear all cookies
     document.cookie = 'spotify_name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'spotify_tracks=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'spotify_timeRange=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'spotify_trackLimit=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setDisplayName(null);
     setTracks([]);
   };
@@ -201,7 +229,41 @@ export default function Home() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold">Welcome, {displayName}!</h2>
-              <div className="flex items-center space-x-4">
+            </div>
+
+            <div className="flex items-end space-x-4 mb-6">
+              <div>
+                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Range
+                </label>
+                <select
+                  id="timeRange"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="short_term">1 month</option>
+                  <option value="medium_term">6 months</option>
+                  <option value="long_term">12 months</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-2">
+                  How many tracks?
+                </label>
+                <select
+                  id="trackLimit"
+                  value={trackLimit}
+                  onChange={(e) => setTrackLimit(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+
+              <div className="flex items-end space-x-4">
                 <button
                   onClick={handleRefresh}
                   disabled={isLoading}
