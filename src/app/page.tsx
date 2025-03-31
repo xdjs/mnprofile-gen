@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSpotifyAuthUrl } from '@/utils/spotify-client';
 
 interface Track {
@@ -67,6 +67,14 @@ export default function Home() {
   const [trackLimit, setTrackLimit] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Use ref to track current displayName value
+  const displayNameRef = useRef(displayName);
+
+  // Update ref when displayName changes
+  useEffect(() => {
+    displayNameRef.current = displayName;
+  }, [displayName]);
+
   useEffect(() => {
     // Check for error in URL parameters
     const params = new URLSearchParams(window.location.search);
@@ -86,7 +94,7 @@ export default function Home() {
       console.log('Running checkData...');
       const cookies = parseCookies();
       
-      if (cookies.spotify_name && cookies.spotify_name !== displayName) {
+      if (cookies.spotify_name && cookies.spotify_name !== displayNameRef.current) {
         console.log('Updating display name:', cookies.spotify_name);
         setDisplayName(cookies.spotify_name);
       }
@@ -110,13 +118,7 @@ export default function Home() {
 
     // Initial check
     checkData();
-
-    // Set up interval for checking updates
-    const interval = setInterval(checkData, 1000);
-
-    // Cleanup
-    return () => clearInterval(interval);
-  }, [displayName]); // Only depend on displayName to prevent circular updates
+  }, []); // Empty dependency array - only run once on mount
 
   const handleConnect = () => {
     setIsLoading(true);
