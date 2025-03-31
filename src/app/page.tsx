@@ -154,7 +154,7 @@ export default function Home() {
 
         {!displayName ? (
           <div className="space-y-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-end space-x-4">
               <div>
                 <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
                   Time Range
@@ -186,15 +186,15 @@ export default function Home() {
                   <option value="50">50</option>
                 </select>
               </div>
-            </div>
 
-            <button
-              onClick={handleConnect}
-              disabled={isLoading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            >
-              {isLoading ? 'Connecting...' : 'Connect with Spotify'}
-            </button>
+              <button
+                onClick={handleConnect}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                {isLoading ? 'Connecting...' : 'Connect with Spotify'}
+              </button>
+            </div>
           </div>
         ) : (
           <div>
