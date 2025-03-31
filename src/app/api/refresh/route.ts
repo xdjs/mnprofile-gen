@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { timeRange, trackLimit } = await request.json();
     
     // Get the refresh token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const refreshToken = cookieStore.get('spotify_refresh_token')?.value;
     
     if (!refreshToken) {
