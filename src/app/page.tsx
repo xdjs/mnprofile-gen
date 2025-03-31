@@ -159,8 +159,12 @@ export default function Home() {
     document.cookie = 'spotify_timeRange=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'spotify_trackLimit=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'spotify_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
+    // Reset state to default values
     setDisplayName(null);
     setTracks([]);
+    setTimeRange('short_term');
+    setTrackLimit('10');
   };
 
   const handleRefresh = async () => {
