@@ -158,15 +158,54 @@ export default function Home() {
     document.cookie = 'spotify_tracks=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'spotify_timeRange=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'spotify_trackLimit=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'spotify_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setDisplayName(null);
     setTracks([]);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
     const cookies = parseCookies();
-    if (cookies.spotify_tracks) {
-      setTracks(cookies.spotify_tracks);
+    
+    // Check if options have changed
+    const optionsChanged = 
+      cookies.spotify_timeRange !== timeRange || 
+      cookies.spotify_trackLimit !== trackLimit;
+
+    if (optionsChanged) {
+      console.log('Options changed, fetching new data...');
+      try {
+        // Store the new options in cookies before making the request
+        document.cookie = `spotify_timeRange=${encodeURIComponent(timeRange)}; path=/; max-age=3600`;
+        document.cookie = `spotify_trackLimit=${encodeURIComponent(trackLimit)}; path=/; max-age=3600`;
+
+        // Make API call to refresh endpoint
+        const response = await fetch('/api/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            timeRange,
+            trackLimit
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to refresh data');
+        }
+
+        // Force a check of the data after the refresh
+        const updatedCookies = parseCookies();
+        if (updatedCookies.spotify_tracks) {
+          setTracks(updatedCookies.spotify_tracks);
+        }
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+        setError('Failed to refresh data. Please try again.');
+      }
+    } else {
+      console.log('Options unchanged, no refresh needed');
     }
     setIsLoading(false);
   };
@@ -288,7 +327,8 @@ export default function Home() {
               <div className="space-y-2">
                 {tracks.map((track, index) => (
                   <div key={index} className="text-gray-700">
-                    {track.name} • <span className="font-medium">{track.artist}</span>
+                    <span className="font-medium text-gray-500 mr-2">{index + 1}.</span>
+                    <span className="font-bold">{track.name}</span> • <span className="italic">{track.artist}</span>
                   </div>
                 ))}
               </div>

@@ -48,10 +48,15 @@ export async function GET(request: Request) {
     }
 
     console.log('Getting access token...');
-    const { access_token } = await getAccessToken(code);
+    const { access_token, refresh_token } = await getAccessToken(code);
     if (!access_token) {
       console.error('No access token received');
       throw new Error('Failed to get access token');
+    }
+
+    if (!refresh_token) {
+      console.error('No refresh token received');
+      throw new Error('Failed to get refresh token');
     }
 
     console.log('Getting user profile...');
@@ -93,6 +98,7 @@ export async function GET(request: Request) {
       
       response.cookies.set('spotify_name', userProfile.display_name, cookieOptions);
       response.cookies.set('spotify_tracks', tracksJson, cookieOptions);
+      response.cookies.set('spotify_refresh_token', refresh_token, cookieOptions);
 
       // Log the cookies that were set
       console.log('Cookies set:', {
