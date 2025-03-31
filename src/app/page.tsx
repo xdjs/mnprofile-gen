@@ -8,16 +8,54 @@ interface Track {
   artist: string;
 }
 
+interface ParsedCookies {
+  spotify_name?: string;
+  spotify_tracks?: Track[];
+}
+
 // Helper function to parse cookies
-function parseCookies() {
-  const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
-    const [name, value] = cookie.split('=');
-    acc[name] = decodeURIComponent(value);
-    return acc;
-  }, {} as Record<string, string>);
+function parseCookies(): ParsedCookies {
+  console.log('Raw document.cookie:', document.cookie);
   
-  console.log('All cookies:', document.cookie);
-  console.log('Parsed cookies:', cookies);
+  const cookies = document.cookie.split('; ').reduce((acc: ParsedCookies, cookie) => {
+    if (!cookie) return acc;
+    
+    const parts = cookie.split('=');
+    if (parts.length !== 2) return acc;
+    
+    const [name, value] = parts;
+    if (!name || !value) return acc;
+    
+    console.log('Processing cookie:', { 
+      name, 
+      valuePreview: value ? value.substring(0, 50) + '...' : 'undefined'
+    });
+    
+    try {
+      // First decode the URI component
+      const decodedValue = decodeURIComponent(value);
+      console.log('Decoded value length:', decodedValue.length);
+      
+      // For spotify_tracks, attempt to parse as JSON
+      if (name === 'spotify_tracks') {
+        const parsedTracks = JSON.parse(decodedValue) as Track[];
+        console.log('Parsed tracks count:', parsedTracks.length);
+        acc.spotify_tracks = parsedTracks;
+      } else if (name === 'spotify_name') {
+        acc.spotify_name = decodedValue;
+      }
+    } catch (e) {
+      console.error(`Error parsing cookie ${name}:`, e);
+      console.error('Full cookie value:', value);
+    }
+    return acc;
+  }, { spotify_name: undefined, spotify_tracks: undefined });
+  
+  console.log('Final parsed cookies:', {
+    hasName: !!cookies.spotify_name,
+    tracksCount: cookies.spotify_tracks?.length
+  });
+  
   return cookies;
 }
 
@@ -28,47 +66,6 @@ export default function Home() {
   const [timeRange, setTimeRange] = useState('short_term');
   const [trackLimit, setTrackLimit] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Function to check and update user data from cookies
-  const checkUserData = () => {
-    console.log('Checking user data...');
-    const cookies = parseCookies();
-    const name = cookies.spotify_name;
-    const tracksCookie = cookies.spotify_tracks;
-    
-    console.log('Found cookies:', { name, hasTracks: !!tracksCookie });
-    
-    if (name) {
-      console.log('Setting display name:', name);
-      setDisplayName(name);
-    }
-    
-    if (tracksCookie) {
-      try {
-        console.log('Raw tracks cookie:', tracksCookie);
-        const tracksData = JSON.parse(tracksCookie);
-        console.log('Parsed tracks data:', tracksData);
-        
-        if (!Array.isArray(tracksData)) {
-          console.error('Tracks data is not an array:', tracksData);
-          return;
-        }
-        
-        if (tracksData.length === 0) {
-          console.log('No tracks found in data');
-          return;
-        }
-        
-        console.log('Setting tracks:', tracksData);
-        setTracks(tracksData);
-      } catch (e) {
-        console.error('Error parsing tracks from cookie:', e);
-        console.error('Raw tracks cookie value:', tracksCookie);
-      }
-    } else {
-      console.log('No tracks cookie found');
-    }
-  };
 
   useEffect(() => {
     // Check for error in URL parameters
@@ -84,24 +81,47 @@ export default function Home() {
       window.history.replaceState({}, '', '/');
     }
 
-    // Initial check for user data
-    checkUserData();
+    // Function to check user data
+    const checkData = () => {
+      console.log('Running checkData...');
+      const cookies = parseCookies();
+      
+      if (cookies.spotify_name && cookies.spotify_name !== displayName) {
+        console.log('Updating display name:', cookies.spotify_name);
+        setDisplayName(cookies.spotify_name);
+      }
+      
+      if (cookies.spotify_tracks) {
+        console.log('Found tracks in cookies:', {
+          newTracksLength: cookies.spotify_tracks.length,
+          sample: cookies.spotify_tracks[0]
+        });
+        
+        // Update tracks if they exist in cookies
+        if (cookies.spotify_tracks.length > 0) {
+          console.log('Setting tracks from cookies');
+          setTracks(cookies.spotify_tracks);
+        }
+      } else {
+        console.log('No tracks in cookies');
+        setTracks([]);
+      }
+    };
 
-    // Set up an interval to check for updates
-    const interval = setInterval(checkUserData, 1000);
+    // Initial check
+    checkData();
 
-    // Cleanup interval on unmount
+    // Set up interval for checking updates
+    const interval = setInterval(checkData, 1000);
+
+    // Cleanup
     return () => clearInterval(interval);
-  }, []);
+  }, [displayName]); // Only depend on displayName to prevent circular updates
 
   const handleConnect = () => {
     setIsLoading(true);
-    const url = getSpotifyAuthUrl();
-    const params = new URLSearchParams({
-      timeRange,
-      trackLimit
-    });
-    window.location.href = `${url}&${params.toString()}`;
+    const url = getSpotifyAuthUrl(timeRange, trackLimit);
+    window.location.href = url;
   };
 
   const handleDisconnect = () => {
@@ -114,7 +134,10 @@ export default function Home() {
 
   const handleRefresh = () => {
     setIsLoading(true);
-    checkUserData();
+    const cookies = parseCookies();
+    if (cookies.spotify_tracks) {
+      setTracks(cookies.spotify_tracks);
+    }
     setIsLoading(false);
   };
 

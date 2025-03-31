@@ -2,25 +2,28 @@ import { NextResponse } from 'next/server';
 import { getAccessToken, getUserProfile, getTopTracks } from '@/utils/spotify';
 import { cookies } from 'next/headers';
 
-// Map numeric values to Spotify API time ranges
-const mapTimeRange = (value: string): string => {
-  switch (value) {
-    case '1':
-      return 'short_term';
-    case '6':
-      return 'medium_term';
-    case '12':
-      return 'long_term';
-    default:
-      return 'short_term'; // Default to 1 month if invalid
-  }
-};
+interface StateParams {
+  timeRange: string;
+  trackLimit: string;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const timeRange = mapTimeRange(searchParams.get('timeRange') || '1');
-  const trackLimit = searchParams.get('trackLimit') || '10';
+  const stateParam = searchParams.get('state');
+
+  let timeRange = 'short_term';
+  let trackLimit = '10';
+
+  if (stateParam) {
+    try {
+      const state = JSON.parse(stateParam) as StateParams;
+      timeRange = state.timeRange;
+      trackLimit = state.trackLimit;
+    } catch (e) {
+      console.error('Error parsing state parameter:', e);
+    }
+  }
 
   console.log('Callback received with params:', { 
     code: code?.substring(0, 10) + '...', 
@@ -66,7 +69,8 @@ export async function GET(request: Request) {
       console.log('Retrieved tracks:', {
         count: topTracks.length,
         expectedCount: parseInt(trackLimit),
-        firstTrack: topTracks[0]
+        firstTrack: topTracks[0],
+        allTracks: topTracks
       });
       
       // Create response with redirect
@@ -83,14 +87,19 @@ export async function GET(request: Request) {
 
       console.log('Setting cookies with options:', cookieOptions);
       
+      const tracksJson = JSON.stringify(topTracks);
+      console.log('Tracks JSON length:', tracksJson.length);
+      console.log('First 100 chars of tracks JSON:', tracksJson.substring(0, 100));
+      
       response.cookies.set('spotify_name', userProfile.display_name, cookieOptions);
-      response.cookies.set('spotify_tracks', JSON.stringify(topTracks), cookieOptions);
+      response.cookies.set('spotify_tracks', tracksJson, cookieOptions);
 
       // Log the cookies that were set
       console.log('Cookies set:', {
         name: userProfile.display_name,
         tracksCount: topTracks.length,
-        expectedTracksCount: parseInt(trackLimit)
+        expectedTracksCount: parseInt(trackLimit),
+        tracksJsonLength: tracksJson.length
       });
 
       return response;
