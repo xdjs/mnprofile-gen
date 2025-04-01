@@ -6,7 +6,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function POST(request: Request) {
+interface Track {
+  name: string;
+  artist: string;
+}
+
+export async function POST() {
   try {
     // Get tracks from cookies
     const cookieStore = await cookies();
@@ -19,11 +24,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const tracks = JSON.parse(decodeURIComponent(tracksCookie));
+    const tracks = JSON.parse(decodeURIComponent(tracksCookie)) as Track[];
     
     // Create a prompt for OpenAI
     const prompt = `Analyze these Spotify tracks and provide insights about the user's music taste:
-    ${tracks.map((track: any, index: number) => `${index + 1}. ${track.name} by ${track.artist}`).join('\n')}
+    ${tracks.map((track, index) => `${index + 1}. ${track.name} by ${track.artist}`).join('\n')}
     
     Please provide:
     1. A brief analysis of their music taste
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
 
     // Get analysis from OpenAI
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -49,8 +54,9 @@ export async function POST(request: Request) {
     });
 
     const analysis = completion.choices[0].message.content;
+    const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
-    return NextResponse.json({ analysis });
+    return NextResponse.json({ analysis, model });
   } catch (error) {
     console.error('Error analyzing tracks:', error);
     return NextResponse.json(

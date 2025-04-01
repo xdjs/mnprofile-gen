@@ -81,6 +81,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [model, setModel] = useState<string | null>(null);
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -230,6 +231,7 @@ export default function Home() {
 
       const data = await response.json();
       setAnalysis(data.analysis);
+      setModel(data.model);
     } catch (error) {
       console.error('Error analyzing tracks:', error);
       setError('Failed to analyze tracks. Please try again.');
@@ -331,7 +333,14 @@ export default function Home() {
 
             {analysis && (
               <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                <h2 className="text-xl font-semibold mb-2">Track Analysis</h2>
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-xl font-semibold">Track Analysis</h2>
+                  {model && (
+                    <span className="text-sm text-gray-500">
+                      Powered by {model}
+                    </span>
+                  )}
+                </div>
                 <div className="whitespace-pre-wrap">{analysis}</div>
               </div>
             )}
