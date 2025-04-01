@@ -79,6 +79,8 @@ export default function Home() {
   const [timeRange, setTimeRange] = useState('short_term');
   const [trackLimit, setTrackLimit] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -214,6 +216,28 @@ export default function Home() {
     setIsLoading(false);
   };
 
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze tracks');
+      }
+
+      const data = await response.json();
+      setAnalysis(data.analysis);
+    } catch (error) {
+      console.error('Error analyzing tracks:', error);
+      setError('Failed to analyze tracks. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -227,118 +251,104 @@ export default function Home() {
 
         {!displayName ? (
           <div className="space-y-4">
-            <div className="flex items-end space-x-4">
-              <div>
-                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-2">
-                  Time Range
-                </label>
-                <select
-                  id="timeRange"
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="short_term">1 month</option>
-                  <option value="medium_term">6 months</option>
-                  <option value="long_term">12 months</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-2">
-                  How many tracks?
-                </label>
-                <select
-                  id="trackLimit"
-                  value={trackLimit}
-                  onChange={(e) => setTrackLimit(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                </select>
-              </div>
-
-              <button
-                onClick={handleConnect}
-                disabled={isLoading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+            <div className="flex gap-4">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="p-2 border rounded"
               >
-                {isLoading ? 'Connecting...' : 'Connect with Spotify'}
-              </button>
+                <option value="short_term">Last 4 Weeks</option>
+                <option value="medium_term">Last 6 Months</option>
+                <option value="long_term">All Time</option>
+              </select>
+              <select
+                value={trackLimit}
+                onChange={(e) => setTrackLimit(e.target.value)}
+                className="p-2 border rounded"
+              >
+                <option value="10">10 Tracks</option>
+                <option value="20">20 Tracks</option>
+                <option value="50">50 Tracks</option>
+              </select>
             </div>
+            <button
+              onClick={handleConnect}
+              disabled={isLoading}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              {isLoading ? 'Connecting...' : 'Connect with Spotify'}
+            </button>
           </div>
         ) : (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Welcome, {displayName}!</h2>
-            </div>
-
-            <div className="flex items-end space-x-4 mb-6">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
               <div>
-                <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-2">
-                  Time Range
-                </label>
-                <select
-                  id="timeRange"
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="short_term">1 month</option>
-                  <option value="medium_term">6 months</option>
-                  <option value="long_term">12 months</option>
-                </select>
+                <p className="text-lg">Connected as {displayName}</p>
+                <div className="flex gap-4 mt-2">
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    <option value="short_term">Last 4 Weeks</option>
+                    <option value="medium_term">Last 6 Months</option>
+                    <option value="long_term">All Time</option>
+                  </select>
+                  <select
+                    value={trackLimit}
+                    onChange={(e) => setTrackLimit(e.target.value)}
+                    className="p-2 border rounded"
+                  >
+                    <option value="10">10 Tracks</option>
+                    <option value="20">20 Tracks</option>
+                    <option value="50">50 Tracks</option>
+                  </select>
+                </div>
               </div>
-
-              <div>
-                <label htmlFor="trackLimit" className="block text-sm font-medium text-gray-700 mb-2">
-                  How many tracks?
-                </label>
-                <select
-                  id="trackLimit"
-                  value={trackLimit}
-                  onChange={(e) => setTrackLimit(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing || tracks.length === 0}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
                 >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                </select>
-              </div>
-
-              <div className="flex items-end space-x-4">
+                  {isAnalyzing ? 'Analyzing...' : 'Analyze Tracks'}
+                </button>
                 <button
                   onClick={handleRefresh}
                   disabled={isLoading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                  className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 disabled:opacity-50"
                 >
                   {isLoading ? 'Refreshing...' : 'Refresh'}
                 </button>
                 <button
                   onClick={handleDisconnect}
-                  style={{
-                    backgroundColor: '#dc2626',
-                    color: 'white'
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm hover:bg-[#b91c1c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                 >
                   Disconnect
                 </button>
               </div>
             </div>
 
-            {tracks.length > 0 ? (
+            {analysis && (
+              <div className="bg-gray-100 p-4 rounded-lg mb-4">
+                <h2 className="text-xl font-semibold mb-2">Track Analysis</h2>
+                <div className="whitespace-pre-wrap">{analysis}</div>
+              </div>
+            )}
+
+            <div className="bg-white shadow rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-4">Your Top Tracks</h2>
               <div className="space-y-2">
                 {tracks.map((track, index) => (
-                  <div key={index} className="text-gray-700">
-                    <span className="font-medium text-gray-500 mr-2">{index + 1}.</span>
-                    <span className="font-bold">{track.name}</span> • <span className="italic">{track.artist}</span>
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-gray-500 w-8">{index + 1}.</span>
+                    <span className="font-bold">{track.name}</span>
+                    <span className="text-gray-500">•</span>
+                    <span className="italic">{track.artist}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-gray-500">No tracks found.</p>
-            )}
+            </div>
           </div>
         )}
       </div>
