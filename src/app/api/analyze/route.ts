@@ -27,33 +27,18 @@ export async function POST() {
     const tracks = JSON.parse(decodeURIComponent(tracksCookie)) as Track[];
     
     // Create a prompt for OpenAI
-    const prompt = `Analyze these Spotify tracks and provide insights about the user's music taste:
-    ${tracks.map((track, index) => `${index + 1}. ${track.name} by ${track.artist}`).join('\n')}
-    
-    Please provide:
-    1. A brief analysis of their music taste
-    2. Common themes or genres
-    3. Notable artists or patterns
-    4. A fun fact or observation`;
+    const instructions = "You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way.";
+    const prompt = `Generate a music nerd profile of me based on the following top tracks:
+    ${tracks.map((track, index) => `${index + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
 
     // Get analysis from OpenAI
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a music analyst who provides insightful and engaging analysis of people's music tastes."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 500
+    const response = await openai.responses.create({
+      model: "gpt-4o",
+      instructions: instructions,
+      input: prompt,
     });
-
-    const analysis = completion.choices[0].message.content;
+    
+    const analysis = response.output_text;
     const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
     return NextResponse.json({ analysis, model });
