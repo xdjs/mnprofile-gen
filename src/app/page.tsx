@@ -243,7 +243,7 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Spotify Top Tracks</h1>
+        <h1 className="text-4xl font-bold mb-8">Music Nerd Profile Generator</h1>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
