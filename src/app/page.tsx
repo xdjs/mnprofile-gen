@@ -82,6 +82,9 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [model, setModel] = useState<string | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -240,6 +243,37 @@ export default function Home() {
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) {
+      setError('Please enter a prompt for the image');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: imagePrompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const data = await response.json();
+      setGeneratedImage(data.imageUrl);
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setError('Failed to generate image. Please try again.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -344,6 +378,42 @@ export default function Home() {
                 <div className="whitespace-pre-wrap">{analysis}</div>
               </div>
             )}
+
+            {/* Image Generation Section */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">Generate Profile Image</h2>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="imagePrompt" className="block text-sm font-medium text-gray-700 mb-1">
+                    Image Prompt
+                  </label>
+                  <input
+                    type="text"
+                    id="imagePrompt"
+                    value={imagePrompt}
+                    onChange={(e) => setImagePrompt(e.target.value)}
+                    placeholder="Describe the image you want to generate..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
+                >
+                  {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+                </button>
+              </div>
+              {generatedImage && (
+                <div className="mt-4">
+                  <img
+                    src={generatedImage}
+                    alt="Generated profile image"
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="bg-white shadow rounded-lg p-4">
               <h2 className="text-xl font-semibold mb-4">Your Top Tracks</h2>
