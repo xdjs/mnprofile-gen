@@ -387,15 +387,14 @@ export default function Home() {
                   >
                     {isAnalyzing ? 'Analyzing...' : 'Generate Music Nerd Profile'}
                   </button>
+                  {analysis && (
+                    <div className="mt-8">
+                      <h2 className="text-lg font-bold text-[#2D3142] mb-4 text-left">Music Nerd Profile</h2>
+                      <div className="text-[#2D3142] text-left">{analysis}</div>
+                    </div>
+                  )}
                 </div>
               </>
-            )}
-
-            {analysis && (
-              <div className="mt-8">
-                <h2 className="text-lg font-bold text-[#2D3142] mb-4">Music Nerd Profile</h2>
-                <div className="text-[#2D3142]">{analysis}</div>
-              </div>
             )}
           </div>
         )}
