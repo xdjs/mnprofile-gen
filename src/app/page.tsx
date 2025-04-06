@@ -223,6 +223,12 @@ export default function Home() {
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName
+        })
       });
 
       if (!response.ok) {
@@ -389,8 +395,10 @@ export default function Home() {
                   </button>
                   {analysis && (
                     <div className="mt-8">
-                      <h2 className="text-lg font-bold text-[#2D3142] mb-4 text-left">Music Nerd Profile</h2>
-                      <div className="text-[#2D3142] text-left">{analysis}</div>
+                      <h2 className="text-2xl font-bold text-[#2D3142] mb-6 text-left">Music Nerd Profile</h2>
+                      <div className="text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed">
+                        {analysis}
+                      </div>
                     </div>
                   )}
                 </div>

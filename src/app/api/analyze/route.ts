@@ -1,52 +1,57 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 interface Track {
   name: string;
   artist: string;
 }
 
-export async function POST() {
+// Helper function to parse cookies
+function parseCookies(cookieString: string): { spotify_tracks?: Track[] } {
+  if (!cookieString) return {};
+  
+  return cookieString.split('; ').reduce((acc: { spotify_tracks?: Track[] }, cookie) => {
+    const [name, value] = cookie.split('=');
+    if (name === 'spotify_tracks') {
+      try {
+        const decodedValue = decodeURIComponent(value);
+        acc.spotify_tracks = JSON.parse(decodedValue);
+      } catch (e) {
+        console.error('Error parsing spotify_tracks cookie:', e);
+      }
+    }
+    return acc;
+  }, {});
+}
+
+export async function POST(request: Request) {
   try {
-    // Get tracks from cookies
-    const cookieStore = await cookies();
-    const tracksCookie = cookieStore.get('spotify_tracks')?.value;
-    
-    if (!tracksCookie) {
-      return NextResponse.json(
-        { error: 'No tracks found' },
-        { status: 401 }
-      );
+    const { displayName } = await request.json();
+    const cookies = parseCookies(request.headers.get('cookie') || '');
+    const tracks = cookies.spotify_tracks || [];
+    const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+
+    if (!tracks.length) {
+      return NextResponse.json({ error: 'No tracks found' }, { status: 400 });
     }
 
-    const tracks = JSON.parse(decodeURIComponent(tracksCookie)) as Track[];
-    
-    // Create a prompt for OpenAI
-    const instructions = "You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way.";
-    const prompt = `Generate a music nerd profile of me based on the following top tracks:
-    ${tracks.map((track, index) => `${index + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
-
-    // Get analysis from OpenAI
-    const response = await openai.responses.create({
-      model: "gpt-4o",
-      instructions: instructions,
-      input: prompt,
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
-    
-    const analysis = response.output_text;
-    const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+
+    const content = `You are a music analyst. Analyze these tracks and create a fun, personalized music nerd profile for ${displayName}. Include emojis and be creative! Here are their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
+
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "user", content }],
+      model: model,
+      temperature: 0.7,
+    });
+
+    const analysis = completion.choices[0].message.content;
 
     return NextResponse.json({ analysis, model });
   } catch (error) {
-    console.error('Error analyzing tracks:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze tracks' },
-      { status: 500 }
-    );
+    console.error('Error in analyze route:', error);
+    return NextResponse.json({ error: 'Failed to analyze tracks' }, { status: 500 });
   }
 } 
