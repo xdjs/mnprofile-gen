@@ -243,6 +243,18 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-white">
       <div className="max-w-md mx-auto text-center pt-20">
+        {displayName && (
+          <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
+            <p className="text-lg text-gray-700">Connected as {displayName}</p>
+            <button
+              onClick={handleDisconnect}
+              className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition-colors text-sm"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+
         <h1 className="mb-2">
           <span className="block text-6xl font-bold text-pink-400 mb-2">music nerd</span>
           <span className="block text-3xl font-bold text-[#2D3142] tracking-wider">PROFILE PLAYGROUND</span>
@@ -262,23 +274,41 @@ export default function Home() {
                 <select
                   value={timeRange}
                   onChange={(e) => setTimeRange(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-white"
+                  className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
                 >
                   <option value="short_term">Last Month</option>
                   <option value="medium_term">Last 6 Months</option>
                   <option value="long_term">All Time</option>
                 </select>
               </div>
-              <div className="flex-1 space-y-2">
-                <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
-                <select
-                  value={trackLimit}
-                  onChange={(e) => setTrackLimit(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-white"
+              <div className="flex-1 flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-left text-lg font-medium text-gray-700 mb-2">Number of Tracks:</label>
+                  <select
+                    value={trackLimit}
+                    onChange={(e) => setTrackLimit(e.target.value)}
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                  >
+                    <option value="10">10 Tracks</option>
+                    <option value="20">20 Tracks</option>
+                  </select>
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="w-10 h-10 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition-colors flex items-center justify-center"
                 >
-                  <option value="10">10 Tracks</option>
-                  <option value="20">20 Tracks</option>
-                </select>
+                  {isLoading ? (
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
             <button
@@ -291,32 +321,47 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-8 mt-12">
-            <div>
-              <p className="text-lg text-gray-700 mb-4">Connected as {displayName}</p>
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
-                  <select
-                    value={timeRange}
-                    onChange={(e) => setTimeRange(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-white"
-                  >
-                    <option value="short_term">Last Month</option>
-                    <option value="medium_term">Last 6 Months</option>
-                    <option value="long_term">All Time</option>
-                  </select>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                >
+                  <option value="short_term">Last Month</option>
+                  <option value="medium_term">Last 6 Months</option>
+                  <option value="long_term">All Time</option>
+                </select>
+              </div>
+              <div className="flex-1 flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-left text-lg font-medium text-gray-700 mb-2">Number of Tracks:</label>
                   <select
                     value={trackLimit}
                     onChange={(e) => setTrackLimit(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-white"
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
                   >
                     <option value="10">10 Tracks</option>
                     <option value="20">20 Tracks</option>
                   </select>
                 </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="w-10 h-10 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition-colors flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -324,22 +369,9 @@ export default function Home() {
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || tracks.length === 0}
-                className="flex-1 bg-blue-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                className="w-full bg-blue-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 transition-colors"
               >
                 {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-              </button>
-              <button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="flex-1 bg-yellow-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-yellow-600 disabled:opacity-50 transition-colors"
-              >
-                {isLoading ? 'Refreshing...' : 'Refresh'}
-              </button>
-              <button
-                onClick={handleDisconnect}
-                className="flex-1 bg-red-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-red-600 transition-colors"
-              >
-                Disconnect
               </button>
             </div>
 
