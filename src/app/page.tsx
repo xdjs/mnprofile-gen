@@ -81,7 +81,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [model, setModel] = useState<string | null>(null);
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -231,7 +230,6 @@ export default function Home() {
 
       const data = await response.json();
       setAnalysis(data.analysis);
-      setModel(data.model);
     } catch (error) {
       console.error('Error analyzing tracks:', error);
       setError('Failed to analyze tracks. Please try again.');
@@ -365,43 +363,40 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || tracks.length === 0}
-                className="w-full bg-blue-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 transition-colors"
-              >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-              </button>
-            </div>
-
-            {analysis && (
-              <div className="bg-gray-50 p-6 rounded-lg text-left">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-semibold text-gray-800">Analysis</h2>
-                  {model && (
-                    <span className="text-sm text-gray-500">
-                      Powered by {model}
-                    </span>
-                  )}
+            {tracks.length > 0 && (
+              <>
+                <div className="mt-8 text-left">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                    {tracks.map((track, index) => (
+                      <div key={index} className="text-[#2D3142] text-lg">
+                        {track.name} / {track.artist}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="whitespace-pre-wrap text-gray-700">{analysis}</div>
-              </div>
+
+                <div className="mt-8">
+                  <h2 className="text-lg font-medium text-[#2D3142] mb-4">Generate with:</h2>
+                  <select
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm mb-4"
+                  >
+                    <option value="OpenAI">OpenAI</option>
+                  </select>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
+                    className="w-full bg-pink-400 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-pink-500 disabled:opacity-50 transition-colors"
+                  >
+                    {isAnalyzing ? 'Analyzing...' : 'Generate Music Nerd Profile'}
+                  </button>
+                </div>
+              </>
             )}
 
-            {tracks.length > 0 && (
-              <div className="bg-gray-50 p-6 rounded-lg text-left">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Top Tracks</h2>
-                <div className="space-y-3">
-                  {tracks.map((track, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <span className="text-gray-400 font-medium">{index + 1}.</span>
-                      <span className="font-bold text-gray-800">{track.name}</span>
-                      <span className="text-gray-400">•</span>
-                      <span className="italic text-gray-600">{track.artist}</span>
-                    </div>
-                  ))}
-                </div>
+            {analysis && (
+              <div className="mt-8">
+                <h2 className="text-lg font-medium text-[#2D3142] mb-4">Music Nerd Profile</h2>
+                <div className="text-[#2D3142]">{analysis}</div>
               </div>
             )}
           </div>
