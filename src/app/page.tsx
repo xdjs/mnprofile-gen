@@ -256,8 +256,8 @@ export default function Home() {
 
         {!displayName ? (
           <div className="space-y-8 mt-12">
-            <div className="space-y-4">
-              <div className="space-y-2">
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
                 <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
                 <select
                   value={timeRange}
@@ -269,7 +269,7 @@ export default function Home() {
                   <option value="long_term">All Time</option>
                 </select>
               </div>
-              <div className="space-y-2">
+              <div className="flex-1 space-y-2">
                 <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
                 <select
                   value={trackLimit}
@@ -291,30 +291,32 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-8 mt-12">
-            <div className="space-y-4">
-              <p className="text-lg text-gray-700">Connected as {displayName}</p>
-              <div className="space-y-2">
-                <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-white"
-                >
-                  <option value="short_term">Last Month</option>
-                  <option value="medium_term">Last 6 Months</option>
-                  <option value="long_term">All Time</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
-                <select
-                  value={trackLimit}
-                  onChange={(e) => setTrackLimit(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-white"
-                >
-                  <option value="10">10 Tracks</option>
-                  <option value="20">20 Tracks</option>
-                </select>
+            <div>
+              <p className="text-lg text-gray-700 mb-4">Connected as {displayName}</p>
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="w-full p-3 border rounded-lg bg-white"
+                  >
+                    <option value="short_term">Last Month</option>
+                    <option value="medium_term">Last 6 Months</option>
+                    <option value="long_term">All Time</option>
+                  </select>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
+                  <select
+                    value={trackLimit}
+                    onChange={(e) => setTrackLimit(e.target.value)}
+                    className="w-full p-3 border rounded-lg bg-white"
+                  >
+                    <option value="10">10 Tracks</option>
+                    <option value="20">20 Tracks</option>
+                  </select>
+                </div>
               </div>
             </div>
 
