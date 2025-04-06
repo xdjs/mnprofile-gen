@@ -82,9 +82,6 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [model, setModel] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [imagePrompt, setImagePrompt] = useState('');
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -243,41 +240,13 @@ export default function Home() {
     }
   };
 
-  const handleGenerateImage = async () => {
-    if (!imagePrompt.trim()) {
-      setError('Please enter a prompt for the image');
-      return;
-    }
-
-    setIsGeneratingImage(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: imagePrompt }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate image');
-      }
-
-      const data = await response.json();
-      setGeneratedImage(data.imageUrl);
-    } catch (error) {
-      console.error('Error generating image:', error);
-      setError('Failed to generate image. Please try again.');
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Music Nerd Profile Generator</h1>
+    <main className="min-h-screen p-8 bg-white">
+      <div className="max-w-md mx-auto text-center pt-20">
+        <h1 className="mb-2">
+          <span className="block text-6xl font-bold text-pink-400 mb-2">music nerd</span>
+          <span className="block text-3xl font-bold text-[#2D3142] tracking-wider">PROFILE PLAYGROUND</span>
+        </h1>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -286,146 +255,121 @@ export default function Home() {
         )}
 
         {!displayName ? (
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="p-2 border rounded"
-              >
-                <option value="short_term">Last 4 Weeks</option>
-                <option value="medium_term">Last 6 Months</option>
-                <option value="long_term">All Time</option>
-              </select>
-              <select
-                value={trackLimit}
-                onChange={(e) => setTrackLimit(e.target.value)}
-                className="border rounded px-3 py-2"
-              >
-                <option value="10">10 tracks</option>
-                <option value="20">20 tracks</option>
-              </select>
+          <div className="space-y-8 mt-12">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="w-full p-3 border rounded-lg bg-white"
+                >
+                  <option value="short_term">Last Month</option>
+                  <option value="medium_term">Last 6 Months</option>
+                  <option value="long_term">All Time</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
+                <select
+                  value={trackLimit}
+                  onChange={(e) => setTrackLimit(e.target.value)}
+                  className="w-full p-3 border rounded-lg bg-white"
+                >
+                  <option value="10">10 Tracks</option>
+                  <option value="20">20 Tracks</option>
+                </select>
+              </div>
             </div>
             <button
               onClick={handleConnect}
               disabled={isLoading}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+              className="w-full bg-[#4CAF50] text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-[#45a049] disabled:opacity-50 transition-colors"
             >
-              {isLoading ? 'Connecting...' : 'Connect with Spotify'}
+              {isLoading ? 'Connecting...' : 'Connect to Spotify'}
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-lg">Connected as {displayName}</p>
-                <div className="flex gap-4 mt-2">
-                  <select
-                    value={timeRange}
-                    onChange={(e) => setTimeRange(e.target.value)}
-                    className="p-2 border rounded"
-                  >
-                    <option value="short_term">Last 4 Weeks</option>
-                    <option value="medium_term">Last 6 Months</option>
-                    <option value="long_term">All Time</option>
-                  </select>
-                  <select
-                    value={trackLimit}
-                    onChange={(e) => setTrackLimit(e.target.value)}
-                    className="border rounded px-3 py-2"
-                  >
-                    <option value="10">10 tracks</option>
-                    <option value="20">20 tracks</option>
-                  </select>
-                </div>
+          <div className="space-y-8 mt-12">
+            <div className="space-y-4">
+              <p className="text-lg text-gray-700">Connected as {displayName}</p>
+              <div className="space-y-2">
+                <label className="block text-left text-lg font-medium text-gray-700">Time Frame:</label>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="w-full p-3 border rounded-lg bg-white"
+                >
+                  <option value="short_term">Last Month</option>
+                  <option value="medium_term">Last 6 Months</option>
+                  <option value="long_term">All Time</option>
+                </select>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || tracks.length === 0}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+              <div className="space-y-2">
+                <label className="block text-left text-lg font-medium text-gray-700">Number of Tracks:</label>
+                <select
+                  value={trackLimit}
+                  onChange={(e) => setTrackLimit(e.target.value)}
+                  className="w-full p-3 border rounded-lg bg-white"
                 >
-                  {isAnalyzing ? 'Analyzing...' : 'Analyze Tracks'}
-                </button>
-                <button
-                  onClick={handleRefresh}
-                  disabled={isLoading}
-                  className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 disabled:opacity-50"
-                >
-                  {isLoading ? 'Refreshing...' : 'Refresh'}
-                </button>
-                <button
-                  onClick={handleDisconnect}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                >
-                  Disconnect
-                </button>
+                  <option value="10">10 Tracks</option>
+                  <option value="20">20 Tracks</option>
+                </select>
               </div>
             </div>
 
+            <div className="flex gap-2">
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || tracks.length === 0}
+                className="flex-1 bg-blue-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="flex-1 bg-yellow-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-yellow-600 disabled:opacity-50 transition-colors"
+              >
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button
+                onClick={handleDisconnect}
+                className="flex-1 bg-red-500 text-white text-lg font-medium px-6 py-3 rounded-full hover:bg-red-600 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+
             {analysis && (
-              <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-xl font-semibold">Track Analysis</h2>
+              <div className="bg-gray-50 p-6 rounded-lg text-left">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-semibold text-gray-800">Analysis</h2>
                   {model && (
                     <span className="text-sm text-gray-500">
                       Powered by {model}
                     </span>
                   )}
                 </div>
-                <div className="whitespace-pre-wrap">{analysis}</div>
+                <div className="whitespace-pre-wrap text-gray-700">{analysis}</div>
               </div>
             )}
 
-            {/* Image Generation Section */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">Generate Profile Image</h2>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="imagePrompt" className="block text-sm font-medium text-gray-700 mb-1">
-                    Image Prompt
-                  </label>
-                  <input
-                    type="text"
-                    id="imagePrompt"
-                    value={imagePrompt}
-                    onChange={(e) => setImagePrompt(e.target.value)}
-                    placeholder="Describe the image you want to generate..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+            {tracks.length > 0 && (
+              <div className="bg-gray-50 p-6 rounded-lg text-left">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Top Tracks</h2>
+                <div className="space-y-3">
+                  {tracks.map((track, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <span className="text-gray-400 font-medium">{index + 1}.</span>
+                      <span className="font-bold text-gray-800">{track.name}</span>
+                      <span className="text-gray-400">•</span>
+                      <span className="italic text-gray-600">{track.artist}</span>
+                    </div>
+                  ))}
                 </div>
-                <button
-                  onClick={handleGenerateImage}
-                  disabled={isGeneratingImage}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
-                >
-                  {isGeneratingImage ? 'Generating...' : 'Generate Image'}
-                </button>
               </div>
-              {generatedImage && (
-                <div className="mt-4">
-                  <img
-                    src={generatedImage}
-                    alt="Generated profile image"
-                    className="w-full rounded-lg shadow-lg"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-4">Your Top Tracks</h2>
-              <div className="space-y-2">
-                {tracks.map((track, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="text-gray-500 w-8">{index + 1}.</span>
-                    <span className="font-bold">{track.name}</span>
-                    <span className="text-gray-500">•</span>
-                    <span className="italic">{track.artist}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
