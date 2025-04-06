@@ -300,11 +300,10 @@ export default function Home() {
               <select
                 value={trackLimit}
                 onChange={(e) => setTrackLimit(e.target.value)}
-                className="p-2 border rounded"
+                className="border rounded px-3 py-2"
               >
-                <option value="10">10 Tracks</option>
-                <option value="20">20 Tracks</option>
-                <option value="50">50 Tracks</option>
+                <option value="10">10 tracks</option>
+                <option value="20">20 tracks</option>
               </select>
             </div>
             <button
@@ -333,11 +332,10 @@ export default function Home() {
                   <select
                     value={trackLimit}
                     onChange={(e) => setTrackLimit(e.target.value)}
-                    className="p-2 border rounded"
+                    className="border rounded px-3 py-2"
                   >
-                    <option value="10">10 Tracks</option>
-                    <option value="20">20 Tracks</option>
-                    <option value="50">50 Tracks</option>
+                    <option value="10">10 tracks</option>
+                    <option value="20">20 tracks</option>
                   </select>
                 </div>
               </div>
