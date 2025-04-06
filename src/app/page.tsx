@@ -348,10 +348,12 @@ export default function Home() {
             {tracks.length > 0 && (
               <>
                 <div className="mt-8 text-left">
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     {tracks.map((track, index) => (
-                      <div key={index} className="text-[#2D3142] text-lg">
-                        {track.name} / {track.artist}
+                      <div key={index} className="text-[#2D3142] text-base">
+                        <span className="font-bold">{track.name}</span>
+                        <span className="mx-2"> - </span>
+                        <span className="italic">{track.artist}</span>
                       </div>
                     ))}
                   </div>
