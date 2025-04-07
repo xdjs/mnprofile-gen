@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const content = `You are a music analyst. Analyze these tracks and create a fun, personalized music nerd profile for ${displayName}. Include emojis and be creative! Here are their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
+    const content = `You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way. Generate a music nerd profile of ${displayName} given their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
 
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content }],
