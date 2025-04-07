@@ -284,7 +284,7 @@ export default function Home() {
               <span className="text-xl">❌</span>
               <div className="space-y-1">
                 <div>Failed to analyze tracks. Please try again.</div>
-                <div className="text-sm opacity-80">Error: {JSON.stringify(errorData)}</div>
+                <div className="text-sm opacity-80">Error: {errorData.details?.message || JSON.stringify(errorData)}</div>
               </div>
             </div>
             <button 

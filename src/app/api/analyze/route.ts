@@ -69,6 +69,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ analysis, model, imageUrl });
   } catch (error) {
     console.error('Error in analyze route:', error);
-    return NextResponse.json({ error: 'Failed to analyze tracks' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = error instanceof Error && (error as any).response?.data 
+      ? (error as any).response.data 
+      : { message: errorMessage };
+    
+    return NextResponse.json({ 
+      error: 'Failed to analyze tracks',
+      details: errorDetails
+    }, { status: 500 });
   }
 } 
