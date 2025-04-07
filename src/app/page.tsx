@@ -252,7 +252,10 @@ export default function Home() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xl">⚠️</span>
-                <span>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</span>
+                <div className="space-y-1">
+                  <div>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</div>
+                  <div className="text-sm opacity-80">Error: {errorData.message || 'No additional details'}</div>
+                </div>
               </div>
               <button 
                 onClick={() => toast.dismiss(t.id)}
@@ -274,7 +277,31 @@ export default function Home() {
           return;
         }
         // Show generic error toast for other error cases
-        toast.error('Failed to analyze tracks. Please try again.');
+        const errorMessage = await response.text().catch(() => 'No error details available');
+        toast((t) => (
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">❌</span>
+              <div className="space-y-1">
+                <div>Failed to analyze tracks. Please try again.</div>
+                <div className="text-sm opacity-80">Error: {errorMessage}</div>
+              </div>
+            </div>
+            <button 
+              onClick={() => toast.dismiss(t.id)}
+              className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        ), {
+          duration: Infinity,
+          style: {
+            maxWidth: '500px',
+            background: '#2D3142',
+            color: '#fff',
+          },
+        });
         setIsAnalyzing(false);
         setIsGeneratingImage(false);
         return;
@@ -324,7 +351,30 @@ export default function Home() {
       }
     } catch (error) {
       console.error('❌ Error analyzing tracks:', error);
-      toast.error('Failed to analyze tracks. Please try again.');
+      toast((t) => (
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">❌</span>
+            <div className="space-y-1">
+              <div>Failed to analyze tracks. Please try again.</div>
+              <div className="text-sm opacity-80">Error: {error instanceof Error ? error.message : 'Unknown error'}</div>
+            </div>
+          </div>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      ), {
+        duration: Infinity,
+        style: {
+          maxWidth: '500px',
+          background: '#2D3142',
+          color: '#fff',
+        },
+      });
       setIsAnalyzing(false);
       setIsGeneratingImage(false);
     }
