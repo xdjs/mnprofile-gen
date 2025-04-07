@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Music Nerd Profile Generator
 
-## Getting Started
+This app generates a music nerd profile based on your Spotify top tracks. It analyzes your music taste and creates a personalized profile with both text analysis and an AI-generated image that represents your music preferences.
 
-First, run the development server:
+## Requirements
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Spotify client id. You can create one here: [Spotify Developer Dashboard](https://developer.spotify.com)
+2. OpenAI api key. You can create one here: [OpenAI Platform](https://platform.openai.com)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/mnprofile-gen.git
+   cd mnprofile-gen
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. Set up environment variables:
+   - Create a `.env.local` file in the root directory
+   - Add the following variables:
+     ```env
+     NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_spotify_client_id
+     NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/api/auth/callback
+     SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+     OPENAI_API_KEY=your_openai_api_key
+     ```
 
-To learn more about Next.js, take a look at the following resources:
+4. Spotify Setup:
+   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Create a new application
+   - Add `http://localhost:3000/api/auth/callback` to the Redirect URIs in your Spotify app settings
+   - Copy your Client ID and Client Secret to the `.env.local` file
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. OpenAI Setup:
+   - Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Create a new API key
+   - Copy the API key to the `.env.local` file
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Running the App
 
-## Deploy on Vercel
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Troubleshooting
+
+- **Spotify Authentication Error**: Make sure your Redirect URI in the Spotify Developer Dashboard exactly matches the one in your `.env.local` file
+- **OpenAI Error**: Ensure you have sufficient credits and your API key has the necessary permissions
+- **"Failed to analyze tracks"**: Check your OpenAI API key and ensure it has access to both the GPT and DALL-E APIs
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
