@@ -84,6 +84,7 @@ export const getAuthUrl = () => {
 };
 
 export const getAccessToken = async (code: string) => {
+  console.log('Starting Spotify token exchange...');
   if (!SPOTIFY_CLIENT_ID) {
     throw new Error('SPOTIFY_CLIENT_ID is not defined');
   }
@@ -102,13 +103,15 @@ export const getAccessToken = async (code: string) => {
     redirect_uri: SPOTIFY_REDIRECT_URI,
   });
 
-  console.log('Token request params:', {
-    grant_type: 'authorization_code',
-    code: code.substring(0, 10) + '...',
-    redirect_uri: SPOTIFY_REDIRECT_URI,
+  console.log('Token request configuration:', {
+    endpoint: SPOTIFY_TOKEN_URL,
+    grantType: 'authorization_code',
+    codePreview: code.substring(0, 10) + '...',
+    redirectUri: SPOTIFY_REDIRECT_URI,
   });
 
   try {
+    console.log('Making token exchange request to Spotify...');
     const response = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',
       headers: {
@@ -126,11 +129,20 @@ export const getAccessToken = async (code: string) => {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
+        headers: Object.fromEntries(response.headers.entries())
       });
       throw new Error(`Failed to get access token: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Token exchange successful:', {
+      hasAccessToken: !!data.access_token,
+      hasRefreshToken: !!data.refresh_token,
+      tokenType: data.token_type,
+      expiresIn: data.expires_in,
+      scope: data.scope
+    });
+
     if (!data.access_token) {
       console.error('No access token in response:', data);
       throw new Error('No access token received from Spotify');
@@ -138,13 +150,18 @@ export const getAccessToken = async (code: string) => {
 
     return data;
   } catch (error) {
-    console.error('Error during token exchange:', error);
+    console.error('Error during token exchange:', {
+      error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };
 
 export const getUserProfile = async (accessToken: string) => {
+  console.log('Starting Spotify user profile request...');
   try {
+    console.log('Making profile request to Spotify API...');
     const response = await fetch(`${SPOTIFY_API_URL}/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -157,6 +174,7 @@ export const getUserProfile = async (accessToken: string) => {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (response.status === 403 && errorText.includes('not be registered')) {
@@ -170,6 +188,14 @@ export const getUserProfile = async (accessToken: string) => {
     }
 
     const data = await response.json();
+    console.log('Profile request successful:', {
+      id: data.id,
+      displayName: data.display_name,
+      type: data.type,
+      product: data.product,
+      country: data.country
+    });
+
     if (!data.display_name) {
       console.error('Invalid profile data:', data);
       throw new Error('Invalid user profile data received');
@@ -177,30 +203,37 @@ export const getUserProfile = async (accessToken: string) => {
 
     return data;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.error('Error getting user profile:', {
+      error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };
 
 export const getTopTracks = async (access_token: string, timeRange: string, limit: string): Promise<Track[]> => {
+  console.log('Starting Spotify top tracks request...');
   try {
-    console.log('Fetching top tracks with params:', { timeRange, limit });
+    const endpoint = `${SPOTIFY_API_URL}/me/top/tracks?time_range=${timeRange}&limit=${limit}`;
+    console.log('Making top tracks request:', {
+      endpoint,
+      timeRange,
+      limit
+    });
     
-    const response = await fetch(
-      `${SPOTIFY_API_URL}/me/top/tracks?time_range=${timeRange}&limit=${limit}`,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      }
-    );
+    const response = await fetch(endpoint, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Error fetching top tracks:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorData
+        error: errorData,
+        headers: Object.fromEntries(response.headers.entries())
       });
       throw new Error(`Failed to fetch top tracks: ${response.statusText}`);
     }
@@ -210,7 +243,11 @@ export const getTopTracks = async (access_token: string, timeRange: string, limi
       total: data.total,
       limit: data.limit,
       offset: data.offset,
-      itemsCount: data.items.length
+      itemsCount: data.items.length,
+      firstTrackPreview: data.items[0] ? {
+        name: data.items[0].name,
+        artist: data.items[0].artists[0].name
+      } : null
     });
 
     return data.items.map((item: SpotifyTrack) => ({
@@ -218,7 +255,10 @@ export const getTopTracks = async (access_token: string, timeRange: string, limi
       artist: item.artists[0].name,
     }));
   } catch (error) {
-    console.error('Error in getTopTracks:', error);
+    console.error('Error in getTopTracks:', {
+      error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }; 

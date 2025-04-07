@@ -15,31 +15,67 @@ interface Track {
 
 // Helper function to parse cookies
 function parseCookies(cookieString: string): { spotify_tracks?: Track[] } {
-  if (!cookieString) return {};
+  console.log('Parsing cookies, cookie string length:', cookieString?.length ?? 0);
+  if (!cookieString) {
+    console.log('No cookies provided');
+    return {};
+  }
   
-  return cookieString.split('; ').reduce((acc: { spotify_tracks?: Track[] }, cookie) => {
-    const [name, value] = cookie.split('=');
-    if (name === 'spotify_tracks') {
-      try {
-        const decodedValue = decodeURIComponent(value);
-        acc.spotify_tracks = JSON.parse(decodedValue);
-      } catch (e) {
-        console.error('Error parsing spotify_tracks cookie:', e);
+  try {
+    const cookies = cookieString.split('; ').reduce((acc: { spotify_tracks?: Track[] }, cookie) => {
+      const [name, value] = cookie.split('=');
+      if (name === 'spotify_tracks') {
+        try {
+          const decodedValue = decodeURIComponent(value);
+          const parsedTracks = JSON.parse(decodedValue);
+          console.log('Successfully parsed spotify_tracks cookie:', {
+            tracksCount: parsedTracks.length,
+            sampleTrack: parsedTracks[0]
+          });
+          acc.spotify_tracks = parsedTracks;
+        } catch (e) {
+          console.error('Error parsing spotify_tracks cookie:', e);
+        }
       }
-    }
-    return acc;
-  }, {});
+      return acc;
+    }, {});
+    
+    console.log('Parsed cookies result:', {
+      hasSpotifyTracks: !!cookies.spotify_tracks,
+      tracksCount: cookies.spotify_tracks?.length
+    });
+    
+    return cookies;
+  } catch (error) {
+    console.error('Error in parseCookies:', error);
+    return {};
+  }
 }
 
 export async function POST(request: Request) {
+  console.log('Starting analyze request');
   try {
     const { displayName } = await request.json();
+    console.log('Request payload:', { displayName });
+
     const cookies = parseCookies(request.headers.get('cookie') || '');
     const tracks = cookies.spotify_tracks || [];
     const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
+    console.log('Analysis configuration:', {
+      tracksCount: tracks.length,
+      model,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY
+    });
+
     if (!tracks.length) {
+      console.warn('No tracks found in cookies');
       return NextResponse.json({ error: 'No tracks found' }, { status: 400 });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OpenAI API key not found');
+      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
     }
 
     const openai = new OpenAI({
@@ -49,6 +85,13 @@ export async function POST(request: Request) {
     // Generate text analysis
     const textContent = `You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way. Generate a music nerd profile of ${displayName} given their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
 
+    console.log('Starting OpenAI text completion:', {
+      model,
+      promptLength: textContent.length,
+      tracksCount: tracks.length,
+      temperature: 0.7
+    });
+
     const textCompletion = await openai.chat.completions.create({
       messages: [{ role: "user", content: textContent }],
       model: model,
@@ -56,14 +99,26 @@ export async function POST(request: Request) {
     });
 
     const analysis = textCompletion.choices[0].message.content;
+    console.log('OpenAI text completion successful:', {
+      completionId: textCompletion.id,
+      model: textCompletion.model,
+      responseLength: analysis?.length ?? 0,
+      promptTokens: textCompletion.usage?.prompt_tokens,
+      completionTokens: textCompletion.usage?.completion_tokens,
+      totalTokens: textCompletion.usage?.total_tokens
+    });
 
     // Generate image
     const imagePrompt = `Generate an image of college me in my dorm bedroom. I'm wearing fan clothing and accessories, and I'm listening intently to music. The room is cluttered yet tastefully filled with CDs, records, posters, books, and other memorabilia and merch that reflect my obsessiveness with the music style, national origin, and aesthetic of the musicians who made these tracks: ${tracks.map(track => `${track.name} by ${track.artist}`).join(', ')}`;
 
-    console.log('Generating image with prompt:', imagePrompt);
+    console.log('Starting OpenAI image generation:', {
+      promptLength: imagePrompt.length,
+      size: '1024x1024',
+      quality: 'standard',
+      style: 'vivid'
+    });
 
     const imageResponse = await openai.images.generate({
-      model: "dall-e-3",
       prompt: imagePrompt,
       n: 1,
       size: "1024x1024",
@@ -72,6 +127,10 @@ export async function POST(request: Request) {
     });
 
     const imageUrl = imageResponse.data[0].url;
+    console.log('OpenAI image generation successful:', {
+      urlLength: imageUrl?.length ?? 0,
+      revisedPrompt: imageResponse.data[0].revised_prompt
+    });
 
     return NextResponse.json({ analysis, model, imageUrl });
   } catch (error) {
@@ -91,6 +150,20 @@ export async function POST(request: Request) {
     const errorDetails = typedError instanceof Error && typedError.response?.data
       ? typedError.response.data 
       : { message: errorMessage };
+    
+    // Enhanced OpenAI error logging
+    console.error('Error details:', {
+      message: errorMessage,
+      details: errorDetails,
+      stack: error instanceof Error ? error.stack : undefined,
+      isOpenAIError: error instanceof OpenAI.APIError,
+      openAIDetails: error instanceof OpenAI.APIError ? {
+        status: error.status,
+        headers: error.headers,
+        code: error.code,
+        type: error.type
+      } : undefined
+    });
     
     return NextResponse.json({ 
       error: 'Failed to analyze tracks',

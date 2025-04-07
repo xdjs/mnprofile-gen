@@ -14,9 +14,16 @@ interface StateParams {
 }
 
 export async function GET(request: Request) {
+  console.log('Starting auth callback request');
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const stateParam = searchParams.get('state');
+
+  console.log('Auth callback params:', {
+    hasCode: !!code,
+    codePreview: code ? `${code.substring(0, 10)}...` : null,
+    hasState: !!stateParam
+  });
 
   let timeRange = 'short_term';
   let trackLimit = '10';
@@ -26,21 +33,15 @@ export async function GET(request: Request) {
       const state = JSON.parse(stateParam) as StateParams;
       timeRange = state.timeRange;
       trackLimit = state.trackLimit;
+      console.log('Successfully parsed state:', { timeRange, trackLimit });
     } catch (e) {
       console.error('Error parsing state parameter:', e);
     }
   }
 
-  console.log('Callback received with params:', { 
-    code: code?.substring(0, 10) + '...', 
-    timeRange, 
-    trackLimit,
-    fullUrl: request.url 
-  });
-
   if (!code) {
     console.error('No code received in callback');
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
   }
 
   try {
@@ -55,6 +56,7 @@ export async function GET(request: Request) {
 
     console.log('Getting access token...');
     const { access_token, refresh_token } = await getAccessToken(code);
+    
     if (!access_token) {
       console.error('No access token received');
       throw new Error('Failed to get access token');
@@ -65,59 +67,59 @@ export async function GET(request: Request) {
       throw new Error('Failed to get refresh token');
     }
 
+    console.log('Successfully received tokens:', {
+      hasAccessToken: !!access_token,
+      accessTokenPreview: `${access_token.substring(0, 10)}...`,
+      hasRefreshToken: !!refresh_token,
+      refreshTokenPreview: `${refresh_token.substring(0, 10)}...`
+    });
+
     console.log('Getting user profile...');
     try {
-      const userProfile = await getUserProfile(access_token);
-      if (!userProfile || !userProfile.display_name) {
-        console.error('Invalid user profile:', userProfile);
-        throw new Error('Failed to get user profile');
-      }
-
-      console.log('Getting top tracks with params:', { timeRange, trackLimit });
-      const topTracks = await getTopTracks(access_token, timeRange, trackLimit);
-
-      console.log('Successfully authenticated user:', userProfile.display_name);
-      console.log('Retrieved tracks:', {
-        count: topTracks.length,
-        expectedCount: parseInt(trackLimit),
-        firstTrack: topTracks[0],
-        allTracks: topTracks
+      const profile = await getUserProfile(access_token);
+      console.log('Got user profile:', {
+        displayName: profile.display_name,
+        id: profile.id
       });
-      
-      // Create response with redirect
+
+      console.log('Getting top tracks...');
+      const topTracks = await getTopTracks(access_token, timeRange, trackLimit);
+      console.log('Got top tracks:', {
+        count: topTracks.length,
+        timeRange,
+        trackLimit
+      });
+
+      // Create response with cookies
       const response = NextResponse.redirect(new URL('/', request.url));
       
-      // Set cookies with the data
+      // Set cookies
       const cookieOptions = {
-        httpOnly: false, // Allow client-side access
+        httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax' as const,
         path: '/',
-        maxAge: 3600 // 1 hour
+        maxAge: 3600
       };
 
       console.log('Setting cookies with options:', cookieOptions);
-      
-      const tracksJson = JSON.stringify(topTracks);
-      console.log('Tracks JSON length:', tracksJson.length);
-      console.log('First 100 chars of tracks JSON:', tracksJson.substring(0, 100));
-      
-      response.cookies.set('spotify_name', userProfile.display_name, cookieOptions);
-      response.cookies.set('spotify_tracks', tracksJson, cookieOptions);
-      response.cookies.set('spotify_refresh_token', refresh_token, cookieOptions);
 
-      // Log the cookies that were set
-      console.log('Cookies set:', {
-        name: userProfile.display_name,
-        tracksCount: topTracks.length,
-        expectedTracksCount: parseInt(trackLimit),
-        tracksJsonLength: tracksJson.length
+      response.cookies.set('spotify_name', profile.display_name, cookieOptions);
+      response.cookies.set('spotify_tracks', JSON.stringify(topTracks), cookieOptions);
+      response.cookies.set('spotify_refresh_token', refresh_token, {
+        ...cookieOptions,
+        httpOnly: true
       });
+      response.cookies.set('spotify_timeRange', timeRange, cookieOptions);
+      response.cookies.set('spotify_trackLimit', trackLimit, cookieOptions);
 
+      console.log('Auth callback completed successfully');
       return response;
     } catch (profileError) {
+      console.error('Error in profile/tracks flow:', profileError);
       // Handle specific error for unregistered users
       if (profileError instanceof Error && profileError.message.includes('needs to be registered')) {
+        console.warn('User needs to be registered in Spotify Dashboard');
         const response = NextResponse.redirect(new URL('/?error=unregistered_user', request.url));
         response.cookies.delete('spotify_name');
         response.cookies.delete('spotify_tracks');
