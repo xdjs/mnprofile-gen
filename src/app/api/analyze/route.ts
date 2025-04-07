@@ -39,17 +39,34 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const content = `You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way. Generate a music nerd profile of ${displayName} given their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
+    // Generate text analysis
+    const textContent = `You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way. Generate a music nerd profile of ${displayName} given their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
 
-    const completion = await openai.chat.completions.create({
-      messages: [{ role: "user", content }],
+    const textCompletion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: textContent }],
       model: model,
       temperature: 0.7,
     });
 
-    const analysis = completion.choices[0].message.content;
+    const analysis = textCompletion.choices[0].message.content;
 
-    return NextResponse.json({ analysis, model });
+    // Generate image
+    const imagePrompt = `Generate an image of college me in my dorm bedroom. I'm wearing fan clothing and accessories, and I'm listening intently to music. The room is cluttered yet tastefully filled with CDs, records, posters, books, and other memorabilia and merch that reflect my obsessiveness with the music style, national origin, and aesthetic of the musicians who made these tracks: ${tracks.map(track => `${track.name} by ${track.artist}`).join(', ')}`;
+
+    console.log('Generating image with prompt:', imagePrompt);
+
+    const imageResponse = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: imagePrompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+      style: "vivid",
+    });
+
+    const imageUrl = imageResponse.data[0].url;
+
+    return NextResponse.json({ analysis, model, imageUrl });
   } catch (error) {
     console.error('Error in analyze route:', error);
     return NextResponse.json({ error: 'Failed to analyze tracks' }, { status: 500 });

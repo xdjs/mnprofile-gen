@@ -80,6 +80,7 @@ export default function Home() {
   const [trackLimit, setTrackLimit] = useState('10');
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedModel, setSelectedModel] = useState('OpenAI');
 
@@ -237,6 +238,7 @@ export default function Home() {
 
       const data = await response.json();
       setAnalysis(data.analysis);
+      setImageUrl(data.imageUrl);
     } catch (error) {
       console.error('Error analyzing tracks:', error);
       setError('Failed to analyze tracks. Please try again.');
@@ -396,8 +398,19 @@ export default function Home() {
                   {analysis && (
                     <div className="mt-8">
                       <h2 className="text-2xl font-bold text-[#2D3142] mb-6 text-left">Music Nerd Profile</h2>
-                      <div className="text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed">
-                        {analysis}
+                      <div className="flex gap-8">
+                        <div className="flex-1 text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed border border-[#2D3142]/20 rounded-lg p-6">
+                          {analysis}
+                        </div>
+                        {imageUrl && (
+                          <div className="flex-1">
+                            <img 
+                              src={imageUrl} 
+                              alt="Generated music nerd profile visualization" 
+                              className="w-full rounded-lg shadow-lg"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
