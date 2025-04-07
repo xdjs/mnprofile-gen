@@ -53,18 +53,13 @@ function parseCookies(cookieString: string): { spotify_tracks?: Track[] } {
 }
 
 export async function POST(request: Request) {
-  console.log('Starting text analysis request');
+  console.log('Starting image generation request');
   try {
-    const { displayName } = await request.json();
-    console.log('Request payload:', { displayName });
-
     const cookies = parseCookies(request.headers.get('cookie') || '');
     const tracks = cookies.spotify_tracks || [];
-    const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
-    console.log('Analysis configuration:', {
+    console.log('Image generation configuration:', {
       tracksCount: tracks.length,
-      model,
       hasOpenAIKey: !!process.env.OPENAI_API_KEY
     });
 
@@ -82,35 +77,33 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Generate text analysis
-    const textContent = `You are the apex music nerd. You are fun, engaging, and know your stuff. You are can also be teasing but in a playful and fun way. Generate a music nerd profile of ${displayName} given their top tracks:\n\n${tracks.map((track: Track, i: number) => `${i + 1}. ${track.name} by ${track.artist}`).join('\n')}`;
+    // Generate image
+    const imagePrompt = `Generate an image of college me in my dorm bedroom. I'm wearing fan clothing and accessories, and I'm listening intently to music. The room is cluttered yet tastefully filled with CDs, records, posters, books, and other memorabilia and merch that reflect my obsessiveness with the music style, national origin, and aesthetic of the musicians who made these tracks: ${tracks.map(track => `${track.name} by ${track.artist}`).join(', ')}`;
 
-    console.log('Starting OpenAI text completion:', {
-      model,
-      promptLength: textContent.length,
-      tracksCount: tracks.length,
-      temperature: 0.7
+    console.log('Starting OpenAI image generation:', {
+      promptLength: imagePrompt.length,
+      size: '1024x1024',
+      quality: 'standard',
+      style: 'vivid'
     });
 
-    const textCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: textContent }],
-      model: model,
-      temperature: 0.7,
+    const imageResponse = await openai.images.generate({
+      prompt: imagePrompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+      style: "vivid",
     });
 
-    const analysis = textCompletion.choices[0].message.content;
-    console.log('OpenAI text completion successful:', {
-      completionId: textCompletion.id,
-      model: textCompletion.model,
-      responseLength: analysis?.length ?? 0,
-      promptTokens: textCompletion.usage?.prompt_tokens,
-      completionTokens: textCompletion.usage?.completion_tokens,
-      totalTokens: textCompletion.usage?.total_tokens
+    const imageUrl = imageResponse.data[0].url;
+    console.log('OpenAI image generation successful:', {
+      urlLength: imageUrl?.length ?? 0,
+      revisedPrompt: imageResponse.data[0].revised_prompt
     });
 
-    return NextResponse.json({ analysis, model });
+    return NextResponse.json({ imageUrl });
   } catch (error) {
-    console.error('Error in analyze route:', error);
+    console.error('Error in image generation route:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     interface ErrorResponse {
@@ -142,7 +135,7 @@ export async function POST(request: Request) {
     });
     
     return NextResponse.json({ 
-      error: 'Failed to analyze tracks',
+      error: 'Failed to generate image',
       details: errorDetails
     }, { status: 500 });
   }
