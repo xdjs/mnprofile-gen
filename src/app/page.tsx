@@ -395,22 +395,39 @@ export default function Home() {
                   >
                     {isAnalyzing ? 'Analyzing...' : 'Generate Music Nerd Profile'}
                   </button>
-                  {analysis && (
+                  {(isAnalyzing || analysis) && (
                     <div className="mt-8">
                       <h2 className="text-2xl font-bold text-[#2D3142] mb-6 text-left">Music Nerd Profile</h2>
                       <div className="flex gap-8">
-                        <div className="flex-1 text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed border border-[#2D3142]/20 rounded-lg p-6">
-                          {analysis}
+                        <div className="flex-1">
+                          {isAnalyzing ? (
+                            <div className="border border-[#2D3142]/20 rounded-lg p-6 space-y-4">
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                              <div className="h-6 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                            </div>
+                          ) : (
+                            <div className="text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed border border-[#2D3142]/20 rounded-lg p-6">
+                              {analysis}
+                            </div>
+                          )}
                         </div>
-                        {imageUrl && (
-                          <div className="flex-1">
+                        <div className="flex-1">
+                          {isAnalyzing ? (
+                            <div className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+                          ) : imageUrl && (
                             <img 
                               src={imageUrl} 
                               alt="Generated music nerd profile visualization" 
                               className="w-full rounded-lg shadow-lg"
                             />
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
