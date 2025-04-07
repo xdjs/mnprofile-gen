@@ -438,7 +438,7 @@ export default function Home() {
                   <select
                     value={timeRange}
                     onChange={(e) => setTimeRange(e.target.value)}
-                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm text-[#2D3142]"
                   >
                     <option value="short_term">Last Month</option>
                     <option value="medium_term">Last 6 Months</option>
@@ -452,7 +452,7 @@ export default function Home() {
                   <select
                     value={trackLimit}
                     onChange={(e) => setTrackLimit(e.target.value)}
-                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm text-[#2D3142]"
                   >
                     <option value="10">10 Tracks</option>
                     <option value="20">20 Tracks</option>
@@ -477,7 +477,7 @@ export default function Home() {
                   <select
                     value={timeRange}
                     onChange={(e) => setTimeRange(e.target.value)}
-                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm text-[#2D3142]"
                   >
                     <option value="short_term">Last Month</option>
                     <option value="medium_term">Last 6 Months</option>
@@ -492,7 +492,7 @@ export default function Home() {
                     <select
                       value={trackLimit}
                       onChange={(e) => setTrackLimit(e.target.value)}
-                      className="w-full h-10 px-3 border rounded-lg bg-white text-sm"
+                      className="w-full h-10 px-3 border rounded-lg bg-white text-sm text-[#2D3142]"
                     >
                       <option value="10">10 Tracks</option>
                       <option value="20">20 Tracks</option>
