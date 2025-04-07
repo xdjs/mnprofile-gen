@@ -8,6 +8,10 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Configure Edge Runtime
+export const runtime = 'edge';
+export const maxDuration = 30; // Maximum duration in seconds
+
 interface Track {
   name: string;
   artist: string;
