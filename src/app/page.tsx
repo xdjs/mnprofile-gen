@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSpotifyAuthUrl } from '@/utils/spotify-client';
 import toast, { Toaster } from 'react-hot-toast';
+import Image from 'next/image';
 
 interface Track {
   name: string;
@@ -254,7 +255,7 @@ export default function Home() {
                 <span className="text-xl">⚠️</span>
                 <div className="space-y-1">
                   <div>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</div>
-                  <div className="text-sm opacity-80">Error: {errorData.message || 'No additional details'}</div>
+                  <div className="text-sm opacity-80">Error: {errorData.message || JSON.stringify(errorData)}</div>
                 </div>
               </div>
               <button 
@@ -277,14 +278,13 @@ export default function Home() {
           return;
         }
         // Show generic error toast for other error cases
-        const errorMessage = await response.text().catch(() => 'No error details available');
         toast((t) => (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="text-xl">❌</span>
               <div className="space-y-1">
                 <div>Failed to analyze tracks. Please try again.</div>
-                <div className="text-sm opacity-80">Error: {errorMessage}</div>
+                <div className="text-sm opacity-80">Error: {JSON.stringify(errorData)}</div>
               </div>
             </div>
             <button 
@@ -576,11 +576,57 @@ export default function Home() {
                               </div>
                             </div>
                           ) : imageUrl && (
-                            <img 
-                              src={imageUrl} 
-                              alt="Generated music nerd profile visualization" 
-                              className="w-full rounded-lg shadow-lg"
-                            />
+                            <div className="space-y-4">
+                              <div className="relative aspect-square rounded-lg overflow-hidden">
+                                <Image 
+                                  src={imageUrl} 
+                                  alt="Generated music nerd profile visualization" 
+                                  fill
+                                  className="object-cover rounded-lg shadow-lg"
+                                  onError={() => {
+                                    console.error('Failed to load image:', imageUrl);
+                                    toast((t) => (
+                                      <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xl">❌</span>
+                                          <div className="space-y-1">
+                                            <div>Failed to load the generated image.</div>
+                                            <div className="text-sm opacity-80">URL: {imageUrl}</div>
+                                          </div>
+                                        </div>
+                                        <button 
+                                          onClick={() => toast.dismiss(t.id)}
+                                          className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                                        >
+                                          Dismiss
+                                        </button>
+                                      </div>
+                                    ), {
+                                      duration: Infinity,
+                                      style: {
+                                        maxWidth: '500px',
+                                        background: '#2D3142',
+                                        color: '#fff',
+                                      },
+                                    });
+                                  }}
+                                  onLoadingComplete={() => {
+                                    console.log('Image loaded successfully:', imageUrl);
+                                  }}
+                                />
+                              </div>
+                              {imageUrl && (
+                                <a 
+                                  href={imageUrl}
+                                  download="music-nerd-profile.png"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block w-full bg-[#2D3142] text-white text-base font-medium px-4 py-2 rounded-lg hover:bg-[#2D3142]/90 transition-colors text-center"
+                                >
+                                  Download Image
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
