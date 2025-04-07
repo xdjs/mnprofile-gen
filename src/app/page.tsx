@@ -84,7 +84,6 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('OpenAI');
 
   // Use ref to track current displayName value
   const displayNameRef = useRef(displayName);
@@ -487,14 +486,9 @@ export default function Home() {
 
                 <div className="mt-8">
                   <h2 className="text-lg font-bold text-[#2D3142] mb-4 text-left">Generate with:</h2>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full h-10 px-3 border rounded-lg bg-white text-sm mb-4"
-                  >
-                    <option value="OpenAI">OpenAI</option>
-                    <option value="Grok">Grok</option>
-                  </select>
+                  <div className="w-full h-10 px-3 border rounded-lg bg-white text-sm mb-4 flex items-center">
+                    OpenAI
+                  </div>
                   <button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing}
