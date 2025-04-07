@@ -22,6 +22,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Music Nerd Profile Generator",
   description: "Generate your music nerd profile based on your Spotify listening history",
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
