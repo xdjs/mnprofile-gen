@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getSpotifyAuthUrl } from '@/utils/spotify-client';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Track {
   name: string;
@@ -82,6 +83,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [selectedModel, setSelectedModel] = useState('OpenAI');
 
   // Use ref to track current displayName value
@@ -98,9 +100,9 @@ export default function Home() {
     const errorParam = params.get('error');
     if (errorParam) {
       if (errorParam === 'unregistered_user') {
-        setError('Please register your Spotify account at https://www.spotify.com/signup before connecting.');
+        toast.error('Please register your Spotify account at https://www.spotify.com/signup before connecting.');
       } else if (errorParam === 'auth_failed') {
-        setError('Failed to connect with Spotify. Please try again.');
+        toast.error('Failed to connect with Spotify. Please try again.');
       }
       // Clear the error from URL
       window.history.replaceState({}, '', '/');
@@ -169,6 +171,7 @@ export default function Home() {
     setTracks([]);
     setTimeRange('short_term');
     setTrackLimit('10');
+    toast.success('Successfully disconnected from Spotify');
   };
 
   const handleRefresh = async () => {
@@ -207,21 +210,27 @@ export default function Home() {
         const updatedCookies = parseCookies();
         if (updatedCookies.spotify_tracks) {
           setTracks(updatedCookies.spotify_tracks);
+          toast.success('Successfully refreshed your top tracks');
         }
       } catch (error) {
         console.error('Error refreshing data:', error);
-        setError('Failed to refresh data. Please try again.');
+        toast.error('Failed to refresh data. Please try again.');
       }
     } else {
       console.log('Options unchanged, no refresh needed');
+      toast('No changes to refresh', {
+        icon: '🤔',
+      });
     }
     setIsLoading(false);
   };
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
+    setIsGeneratingImage(true);
     setError(null);
     try {
+      console.log('🚀 Starting analysis...');
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
@@ -236,19 +245,80 @@ export default function Home() {
         throw new Error('Failed to analyze tracks');
       }
 
-      const data = await response.json();
-      setAnalysis(data.analysis);
-      setImageUrl(data.imageUrl);
+      // Use streaming to get data as it arrives
+      const reader = response.body?.getReader();
+      let receivedText = '';
+
+      if (reader) {
+        console.log('📡 Starting to read response stream...');
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('✅ Stream complete');
+            break;
+          }
+
+          // Convert the chunk to text
+          const chunk = new TextDecoder().decode(value);
+          console.log('📦 Received chunk:', chunk.length, 'bytes');
+          receivedText += chunk;
+
+          try {
+            const data = JSON.parse(receivedText);
+            if (data.analysis && !analysis) {
+              console.log('✍️ Received text analysis:', {
+                previewLength: data.analysis.length,
+                preview: data.analysis.substring(0, 50) + '...'
+              });
+              setAnalysis(data.analysis);
+              setIsAnalyzing(false);
+              toast.success('Generated your music nerd profile!');
+            }
+            if (data.imageUrl && !imageUrl) {
+              console.log('🎨 Received generated image URL:', {
+                preview: data.imageUrl.substring(0, 50) + '...'
+              });
+              setImageUrl(data.imageUrl);
+              setIsGeneratingImage(false);
+              toast.success('Generated your profile image!');
+            }
+          } catch {
+            console.debug('Incomplete JSON chunk, waiting for more data...');
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error analyzing tracks:', error);
-      setError('Failed to analyze tracks. Please try again.');
-    } finally {
+      console.error('❌ Error analyzing tracks:', error);
+      toast.error('Failed to analyze tracks. Please try again.');
       setIsAnalyzing(false);
+      setIsGeneratingImage(false);
     }
   };
 
   return (
     <main className="min-h-screen p-8 bg-white">
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#2D3142',
+            color: '#fff',
+          },
+          success: {
+            iconTheme: {
+              primary: '#4CAF50',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff4b4b',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <div className="max-w-md mx-auto text-center pt-20">
         {displayName && (
           <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
@@ -395,7 +465,7 @@ export default function Home() {
                   >
                     {isAnalyzing ? 'Analyzing...' : 'Generate Music Nerd Profile'}
                   </button>
-                  {(isAnalyzing || analysis) && (
+                  {(isAnalyzing || isGeneratingImage || analysis) && (
                     <div className="mt-8">
                       <h2 className="text-2xl font-bold text-[#2D3142] mb-6 text-left">Music Nerd Profile</h2>
                       <div className="flex gap-8">
@@ -411,15 +481,19 @@ export default function Home() {
                               <div className="h-6 bg-gray-200 rounded animate-pulse w-5/6"></div>
                               <div className="h-6 bg-gray-200 rounded animate-pulse w-2/3"></div>
                             </div>
-                          ) : (
+                          ) : analysis && (
                             <div className="text-[#2D3142] text-left whitespace-pre-wrap text-lg leading-relaxed border border-[#2D3142]/20 rounded-lg p-6">
                               {analysis}
                             </div>
                           )}
                         </div>
                         <div className="flex-1">
-                          {isAnalyzing ? (
-                            <div className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+                          {isGeneratingImage ? (
+                            <div className="aspect-square bg-gray-200 rounded-lg animate-pulse">
+                              <div className="h-full flex items-center justify-center text-gray-500">
+                                Generating image...
+                              </div>
+                            </div>
                           ) : imageUrl && (
                             <img 
                               src={imageUrl} 
