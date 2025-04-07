@@ -230,6 +230,9 @@ export default function Home() {
     setIsAnalyzing(true);
     setIsGeneratingImage(true);
     setError(null);
+    // Clear existing results
+    setAnalysis(null);
+    setImageUrl(null);
 
     try {
       console.log('🚀 Starting analysis...');
@@ -298,7 +301,7 @@ export default function Home() {
 
           try {
             const data = JSON.parse(receivedText);
-            if (data.analysis && !analysis) {
+            if (data.analysis) {
               console.log('✍️ Received text analysis:', {
                 previewLength: data.analysis.length,
                 preview: data.analysis.substring(0, 50) + '...'
@@ -307,7 +310,7 @@ export default function Home() {
               setIsAnalyzing(false);
               toast.success('Generated your music nerd profile!', { duration: 4000 });
             }
-            if (data.imageUrl && !imageUrl) {
+            if (data.imageUrl) {
               console.log('🎨 Received generated image URL:', {
                 preview: data.imageUrl.substring(0, 50) + '...'
               });
