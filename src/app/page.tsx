@@ -171,7 +171,7 @@ export default function Home() {
     setTracks([]);
     setTimeRange('short_term');
     setTrackLimit('10');
-    toast.success('Successfully disconnected from Spotify');
+    toast.success('Successfully disconnected from Spotify', { duration: 4000 });
   };
 
   const handleRefresh = async () => {
@@ -210,7 +210,7 @@ export default function Home() {
         const updatedCookies = parseCookies();
         if (updatedCookies.spotify_tracks) {
           setTracks(updatedCookies.spotify_tracks);
-          toast.success('Successfully refreshed your top tracks');
+          toast.success('Successfully refreshed your top tracks', { duration: 4000 });
         }
       } catch (error) {
         console.error('Error refreshing data:', error);
@@ -220,6 +220,7 @@ export default function Home() {
       console.log('Options unchanged, no refresh needed');
       toast('No changes to refresh', {
         icon: '🤔',
+        duration: 4000
       });
     }
     setIsLoading(false);
@@ -229,6 +230,7 @@ export default function Home() {
     setIsAnalyzing(true);
     setIsGeneratingImage(true);
     setError(null);
+
     try {
       console.log('🚀 Starting analysis...');
       const response = await fetch('/api/analyze', {
@@ -242,7 +244,38 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to analyze tracks');
+        const errorData = await response.json();
+        if (errorData.code === 'content_policy_violation') {
+          toast((t) => (
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <span>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</span>
+              </div>
+              <button 
+                onClick={() => toast.dismiss(t.id)}
+                className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          ), {
+            duration: Infinity,
+            style: {
+              maxWidth: '500px',
+              background: '#2D3142',
+              color: '#fff',
+            },
+          });
+          setIsAnalyzing(false);
+          setIsGeneratingImage(false);
+          return;
+        }
+        // Show generic error toast for other error cases
+        toast.error('Failed to analyze tracks. Please try again.');
+        setIsAnalyzing(false);
+        setIsGeneratingImage(false);
+        return;
       }
 
       // Use streaming to get data as it arrives
@@ -272,7 +305,7 @@ export default function Home() {
               });
               setAnalysis(data.analysis);
               setIsAnalyzing(false);
-              toast.success('Generated your music nerd profile!');
+              toast.success('Generated your music nerd profile!', { duration: 4000 });
             }
             if (data.imageUrl && !imageUrl) {
               console.log('🎨 Received generated image URL:', {
@@ -280,7 +313,7 @@ export default function Home() {
               });
               setImageUrl(data.imageUrl);
               setIsGeneratingImage(false);
-              toast.success('Generated your profile image!');
+              toast.success('Generated your profile image!', { duration: 4000 });
             }
           } catch {
             console.debug('Incomplete JSON chunk, waiting for more data...');
@@ -300,12 +333,13 @@ export default function Home() {
       <Toaster 
         position="top-center"
         toastOptions={{
-          duration: 4000,
+          duration: Infinity,
           style: {
             background: '#2D3142',
             color: '#fff',
           },
           success: {
+            duration: 4000,
             iconTheme: {
               primary: '#4CAF50',
               secondary: '#fff',
