@@ -536,7 +536,7 @@ export default function Home() {
 
                 <div className="mt-8">
                   <h2 className="text-lg font-bold text-[#2D3142] mb-4 text-left">Generate with:</h2>
-                  <div className="w-full h-10 px-3 border rounded-lg bg-white text-sm mb-4 flex items-center">
+                  <div className="w-full h-10 px-3 border rounded-lg bg-white text-sm mb-4 flex items-center text-[#2D3142]">
                     OpenAI
                   </div>
                   <button
