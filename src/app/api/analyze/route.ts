@@ -77,8 +77,19 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error in analyze route:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = error instanceof Error && (error as any).response?.data 
-      ? (error as any).response.data 
+    
+    interface ErrorResponse {
+      response?: {
+        data: {
+          message: string;
+          [key: string]: unknown;
+        };
+      };
+    }
+    
+    const typedError = error as Error & ErrorResponse;
+    const errorDetails = typedError instanceof Error && typedError.response?.data
+      ? typedError.response.data 
       : { message: errorMessage };
     
     return NextResponse.json({ 

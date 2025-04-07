@@ -7,7 +7,6 @@
 
 import { NextResponse } from 'next/server';
 import { getAccessToken, getUserProfile, getTopTracks } from '@/utils/spotify';
-import { cookies } from 'next/headers';
 
 interface StateParams {
   timeRange: string;
@@ -46,9 +45,9 @@ export async function GET(request: Request) {
 
   try {
     // Validate environment variables
-    if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+    if (!process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
       console.error('Missing Spotify credentials:', {
-        hasClientId: !!process.env.SPOTIFY_CLIENT_ID,
+        hasClientId: !!process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
         hasClientSecret: !!process.env.SPOTIFY_CLIENT_SECRET
       });
       throw new Error('Missing Spotify credentials');
