@@ -242,90 +242,59 @@ export default function Home() {
     setImageUrl(null);
 
     try {
-      console.log('🚀 Starting analysis and image generation in parallel...');
+      console.log('🚀 Starting analysis and image generation asynchronously...');
       
-      // Make both API calls in parallel
-      const [analysisResponse, imageResponse] = await Promise.all([
-        fetch('/api/analyze', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            displayName
-          })
-        }),
-        fetch('/api/generate-image', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
+      // Start analysis task
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName
         })
-      ]);
-
-      // Handle analysis response
-      if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json();
-        if (errorData.code === 'content_policy_violation') {
-          toast((t) => (
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">⚠️</span>
-                <div className="space-y-1">
-                  <div>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</div>
-                  <div className="text-sm opacity-80">Error: {errorData.message || JSON.stringify(errorData)}</div>
-                </div>
-              </div>
-              <button 
-                onClick={() => toast.dismiss(t.id)}
-                className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          ), {
-            duration: Infinity,
-            style: {
-              maxWidth: '500px',
-              background: '#2D3142',
-              color: '#fff',
-            },
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.analysis) {
+          console.log('✍️ Received text analysis:', {
+            previewLength: data.analysis.length,
+            preview: data.analysis.substring(0, 50) + '...'
           });
+          setAnalysis(data.analysis);
           setIsAnalyzing(false);
-          return;
+          toast.success('Generated your music nerd profile!', { duration: 4000 });
         }
-        throw new Error(JSON.stringify(errorData));
-      }
-
-      // Handle image response
-      if (!imageResponse.ok) {
-        const errorData = await imageResponse.json();
-        throw new Error(JSON.stringify(errorData));
-      }
-
-      // Parse responses
-      const analysisData = await analysisResponse.json();
-      const imageData = await imageResponse.json();
-
-      // Update state with results
-      if (analysisData.analysis) {
-        console.log('✍️ Received text analysis:', {
-          previewLength: analysisData.analysis.length,
-          preview: analysisData.analysis.substring(0, 50) + '...'
-        });
-        setAnalysis(analysisData.analysis);
+      })
+      .catch(error => {
+        console.error('Analysis task failed:', error);
         setIsAnalyzing(false);
-        toast.success('Generated your music nerd profile!', { duration: 4000 });
-      }
+        toast.error('Failed to generate profile analysis. Please try again.');
+      });
 
-      if (imageData.imageUrl) {
-        console.log('🎨 Received generated image URL:', {
-          preview: imageData.imageUrl.substring(0, 50) + '...'
-        });
-        setImageUrl(imageData.imageUrl);
+      // Start image generation task
+      fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.imageUrl) {
+          console.log('🎨 Received generated image URL:', {
+            preview: data.imageUrl.substring(0, 50) + '...'
+          });
+          setImageUrl(data.imageUrl);
+          setIsGeneratingImage(false);
+          toast.success('Generated your profile image!', { duration: 4000 });
+        }
+      })
+      .catch(error => {
+        console.error('Image generation task failed:', error);
         setIsGeneratingImage(false);
-        toast.success('Generated your profile image!', { duration: 4000 });
-      }
+        toast.error('Failed to generate profile image. Please try again.');
+      });
 
     } catch (error) {
       console.error('❌ Error in generation:', error);
@@ -353,9 +322,6 @@ export default function Home() {
           color: '#fff',
         },
       });
-    } finally {
-      setIsAnalyzing(false);
-      setIsGeneratingImage(false);
     }
   };
 
