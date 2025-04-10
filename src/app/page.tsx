@@ -254,9 +254,44 @@ export default function Home() {
           displayName
         })
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(errorData => {
+            if (errorData.code === 'content_policy_violation') {
+              toast((t) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    <div className="space-y-1">
+                      <div>Content policy violation: Some of your track names or artists may not be appropriate for analysis. Please try refreshing your tracks.</div>
+                      <div className="text-sm opacity-80">Error: {errorData.message || JSON.stringify(errorData)}</div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => toast.dismiss(t.id)}
+                    className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ), {
+                duration: Infinity,
+                style: {
+                  maxWidth: '500px',
+                  background: '#2D3142',
+                  color: '#fff',
+                },
+              });
+              setIsAnalyzing(false);
+              return null;
+            }
+            return null;
+          });
+        }
+        return response.json();
+      })
       .then(data => {
-        if (data.analysis) {
+        if (data && data.analysis) {
           console.log('✍️ Received text analysis:', {
             previewLength: data.analysis.length,
             preview: data.analysis.substring(0, 50) + '...'
@@ -269,7 +304,30 @@ export default function Home() {
       .catch(error => {
         console.error('Analysis task failed:', error);
         setIsAnalyzing(false);
-        toast.error('Failed to generate profile analysis. Please try again.');
+        toast((t) => (
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">❌</span>
+              <div className="space-y-1">
+                <div>Failed to generate profile analysis. Please try again.</div>
+                <div className="text-sm opacity-80">Error: {error instanceof Error ? error.message : 'Unknown error'}</div>
+              </div>
+            </div>
+            <button 
+              onClick={() => toast.dismiss(t.id)}
+              className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        ), {
+          duration: Infinity,
+          style: {
+            maxWidth: '500px',
+            background: '#2D3142',
+            color: '#fff',
+          },
+        });
       });
 
       // Start image generation task
@@ -282,7 +340,7 @@ export default function Home() {
       .then(response => {
         if (!response.ok) {
           return response.json().then(errorData => {
-            if (errorData.code === 'content_policy_violation') {
+            if (errorData.code === 'content_policy_violation' || errorData.message?.includes('safety system')) {
               toast((t) => (
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
@@ -308,9 +366,35 @@ export default function Home() {
                 },
               });
               setIsGeneratingImage(false);
-              return;
+              return null;
             }
-            throw new Error(JSON.stringify(errorData));
+            // Handle other error cases
+            toast((t) => (
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">❌</span>
+                  <div className="space-y-1">
+                    <div>Failed to generate profile image. Please try again.</div>
+                    <div className="text-sm opacity-80">Error: {errorData.message || JSON.stringify(errorData)}</div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => toast.dismiss(t.id)}
+                  className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ), {
+              duration: Infinity,
+              style: {
+                maxWidth: '500px',
+                background: '#2D3142',
+                color: '#fff',
+              },
+            });
+            setIsGeneratingImage(false);
+            return null;
           });
         }
         return response.json();
