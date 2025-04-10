@@ -279,9 +279,44 @@ export default function Home() {
           'Content-Type': 'application/json',
         }
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(errorData => {
+            if (errorData.code === 'content_policy_violation') {
+              toast((t) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    <div className="space-y-1">
+                      <div>Content policy violation: The generated image may not be appropriate. Please try again.</div>
+                      <div className="text-sm opacity-80">Error: {errorData.message || JSON.stringify(errorData)}</div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => toast.dismiss(t.id)}
+                    className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ), {
+                duration: Infinity,
+                style: {
+                  maxWidth: '500px',
+                  background: '#2D3142',
+                  color: '#fff',
+                },
+              });
+              setIsGeneratingImage(false);
+              return;
+            }
+            throw new Error(JSON.stringify(errorData));
+          });
+        }
+        return response.json();
+      })
       .then(data => {
-        if (data.imageUrl) {
+        if (data && data.imageUrl) {
           console.log('🎨 Received generated image URL:', {
             preview: data.imageUrl.substring(0, 50) + '...'
           });
@@ -293,7 +328,30 @@ export default function Home() {
       .catch(error => {
         console.error('Image generation task failed:', error);
         setIsGeneratingImage(false);
-        toast.error('Failed to generate profile image. Please try again.');
+        toast((t) => (
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">❌</span>
+              <div className="space-y-1">
+                <div>Failed to generate profile image. Please try again.</div>
+                <div className="text-sm opacity-80">Error: {error instanceof Error ? error.message : 'Unknown error'}</div>
+              </div>
+            </div>
+            <button 
+              onClick={() => toast.dismiss(t.id)}
+              className="shrink-0 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        ), {
+          duration: Infinity,
+          style: {
+            maxWidth: '500px',
+            background: '#2D3142',
+            color: '#fff',
+          },
+        });
       });
 
     } catch (error) {
