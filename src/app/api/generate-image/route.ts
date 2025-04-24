@@ -86,26 +86,29 @@ export async function POST(request: Request) {
 
     console.log('Starting OpenAI image generation:', {
       promptLength: imagePrompt.length,
-      size: '1024x1024',
-      quality: 'standard',
-      style: 'vivid'
     });
 
+    const startTime = performance.now();
     const imageResponse = await openai.images.generate({
       prompt: imagePrompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-      style: "vivid",
+      model: 'gpt-image-1',
     });
+    const duration = performance.now() - startTime;
 
-    const imageUrl = imageResponse.data[0].url;
+    const base64Image = imageResponse.data?.[0]?.b64_json;
     console.log('OpenAI image generation successful:', {
-      urlLength: imageUrl?.length ?? 0,
-      revisedPrompt: imageResponse.data[0].revised_prompt
+      hasBase64Data: !!base64Image,
+      dataLength: base64Image?.length ?? 0,
+      durationMs: Math.round(duration),  // Round to nearest millisecond
     });
 
-    return NextResponse.json({ imageUrl });
+    // Convert base64 to data URL format for direct use in <img> tags
+    const imageDataUrl = base64Image ? `data:image/png;base64,${base64Image}` : null;
+    console.log('Generated image URL:', {
+      hasUrl: !!imageDataUrl,
+      urlPreview: imageDataUrl ? `${imageDataUrl.substring(0, 50)}...` : null
+    });
+    return NextResponse.json({ imageUrl: imageDataUrl });
   } catch (error) {
     console.error('Error in image generation route:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
