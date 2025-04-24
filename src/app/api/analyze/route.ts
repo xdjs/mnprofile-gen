@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { text } from 'stream/consumers';
 
 interface Track {
   name: string;
@@ -92,20 +93,16 @@ export async function POST(request: Request) {
       temperature: 0.7
     });
 
-    const textCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: textContent }],
+    const textCompletion = await openai.responses.create({
       model: model,
-      temperature: 0.7,
+      input: textContent,
     });
 
-    const analysis = textCompletion.choices[0].message.content;
+    const analysis = textCompletion.output_text;
     console.log('OpenAI text completion successful:', {
       completionId: textCompletion.id,
       model: textCompletion.model,
       responseLength: analysis?.length ?? 0,
-      promptTokens: textCompletion.usage?.prompt_tokens,
-      completionTokens: textCompletion.usage?.completion_tokens,
-      totalTokens: textCompletion.usage?.total_tokens
     });
 
     return NextResponse.json({ analysis, model });
