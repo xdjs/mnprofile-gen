@@ -8,13 +8,16 @@ This repository contains a Next.js project built with TypeScript.
 - After cloning, run `npm install` to fetch dependencies.
 - Local development is done via `npm run dev`.
 
-## Contributing
+## Required checks
+Before committing any changes, run the following commands and ensure they succeed:
 
-- Keep all source code in the `src/` directory.
-- Follow the existing TypeScript and React style.
-- Run `npm run lint` and `npm run build` before committing changes.
+```bash
+npm run build
+npm run lint
+npm run type-check
+npm test
+```
 
-## Testing
-
-- There are no unit tests. The lint and build commands act as basic sanity checks.
-
+## Pull request guidelines
+- Summarize key changes in the PR description.
+- Mention the test commands that were executed and their results.
